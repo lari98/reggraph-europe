@@ -12,7 +12,6 @@ E6    Every change and its audit entry commit in one transaction (both or neithe
 
 from __future__ import annotations
 
-import sqlite3
 from datetime import date, datetime
 from decimal import Decimal
 from typing import Any, Final
@@ -30,14 +29,14 @@ from reggraph.registry.models import (
 from reggraph.security.audit import AuditLog
 from reggraph.security.rbac import Permission, Principal
 from reggraph.security.validation import clean_text
-from reggraph.storage.sqlite import Database
+from reggraph.storage.base import Db, Row
 
 MAX_LINKS_PER_TENANT: Final = 100_000
 _MAX_PAGE: Final = 200
 
 
 class EntityStore:
-    def __init__(self, db: Database, audit: AuditLog, clock: Clock) -> None:
+    def __init__(self, db: Db, audit: AuditLog, clock: Clock) -> None:
         self._db = db
         self._audit = audit
         self._clock = clock
@@ -48,7 +47,7 @@ class EntityStore:
         return f"user:{who.user_id}"
 
     @staticmethod
-    def _to_version(row: sqlite3.Row) -> EntityVersion:
+    def _to_version(row: Row) -> EntityVersion:
         return EntityVersion(
             lei=row["lei"],
             version_no=row["version_no"],
@@ -60,7 +59,7 @@ class EntityStore:
         )
 
     @staticmethod
-    def _to_link(row: sqlite3.Row) -> OwnershipLink:
+    def _to_link(row: Row) -> OwnershipLink:
         until = row["effective_until"]
         return OwnershipLink(
             link_id=row["link_id"],
@@ -343,6 +342,19 @@ class EntityStore:
             ):
                 found.add(lei)
         return found
+
+    def jurisdictions_of(self, tenant: str, leis: set[str]) -> dict[str, str]:
+        """Current jurisdiction code per registered LEI (internal use by other modules)."""
+        out: dict[str, str] = {}
+        for lei in sorted(leis):
+            rows = self._db.query(
+                "SELECT jurisdiction FROM entity_versions WHERE tenant_id = ? AND lei = ?"
+                " ORDER BY version_no DESC LIMIT 1",
+                (tenant, lei),
+            )
+            if rows:
+                out[lei] = str(rows[0]["jurisdiction"])
+        return out
 
     def links_on(self, tenant: str, on: date) -> list[groups.Link]:
         """Ownership links in force on ``on`` for ``tenant`` (internal use by other modules)."""

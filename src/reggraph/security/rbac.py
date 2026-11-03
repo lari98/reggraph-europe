@@ -20,6 +20,8 @@ Permission matrix (``x`` = granted)::
     exposure:write       -        x             x                x               -
     insurance:read       -        x             x                x               -
     insurance:write      -        x             x                x               -
+    stress:read          -        x             x                x               -
+    stress:write         -        x             x                x               -
 
 Separation of duties: a tenant admin cannot approve rules, and nobody can approve a version
 they proposed themselves (the four-eyes rule is enforced in ``RuleStore.approve``).
@@ -59,12 +61,21 @@ class Permission(StrEnum):
     EXPOSURE_WRITE = "exposure:write"
     INSURANCE_READ = "insurance:read"
     INSURANCE_WRITE = "insurance:write"
+    STRESS_READ = "stress:read"
+    STRESS_WRITE = "stress:write"
 
 
 _P = Permission
 _VIEWER = frozenset({_P.REF_READ, _P.FX_CONVERT, _P.RULES_READ, _P.REGISTRY_READ})
 _DATA = frozenset(
-    {_P.EXPOSURE_READ, _P.EXPOSURE_WRITE, _P.INSURANCE_READ, _P.INSURANCE_WRITE}
+    {
+        _P.EXPOSURE_READ,
+        _P.EXPOSURE_WRITE,
+        _P.INSURANCE_READ,
+        _P.INSURANCE_WRITE,
+        _P.STRESS_READ,
+        _P.STRESS_WRITE,
+    }
 )  # commercially sensitive exposure and insurance data: not for plain viewers
 _ANALYST = _VIEWER | _DATA | {_P.RULES_PROPOSE, _P.TASKS_READ, _P.REGISTRY_WRITE}
 

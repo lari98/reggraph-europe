@@ -17,7 +17,7 @@ from reggraph.currency import Money
 from reggraph.i18n import negotiate
 from reggraph.security.rbac import Role
 from reggraph.security.validation import clean_text
-from tests.conftest import rule_payload
+from tests.conftest import drop_trigger, rule_payload, table_names
 
 pytestmark = pytest.mark.security
 Auth = Callable[..., dict[str, str]]
@@ -213,10 +213,9 @@ class TestInjection:
         assert len(app_client.get("/v1/rules/EU.CRR3.CET1", headers=ana).json()) == 1
 
     def test_tables_survive(self, services: Services) -> None:
-        rows = services.db.query("SELECT name FROM sqlite_master WHERE type='table'")
-        assert {"rule_versions", "audit_log", "review_tasks", "fx_rates"} <= {
-            r["name"] for r in rows
-        }
+        assert {"rule_versions", "audit_log", "review_tasks", "fx_rates"} <= table_names(
+            services.db
+        )
 
     def test_template_injection_is_inert(self, services: Services) -> None:
         text = services.translator.translate("status.ok", "en", name="${secret}", x="{0.__class__}")
@@ -335,7 +334,7 @@ class TestAuditTamper:
         assert app_client.get("/v1/audit/verify", headers=admin).json()["ok"]
         with pytest.raises(Exception, match="append-only|immutable|abort|not allowed"):
             services.db.execute("UPDATE audit_log SET actor = 'user:evil'")
-        services.db.execute("DROP TRIGGER audit_no_update")
+        drop_trigger(services.db, "audit_no_update", "audit_log")
         services.db.execute("UPDATE audit_log SET subject = 'forged' WHERE n = 1")
         assert not app_client.get("/v1/audit/verify", headers=admin).json()["ok"]
 

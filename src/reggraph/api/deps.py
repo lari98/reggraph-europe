@@ -21,15 +21,17 @@ from reggraph.regulation import RuleStore
 from reggraph.security.audit import AuditLog
 from reggraph.security.ratelimit import RateLimiter
 from reggraph.security.rbac import Permission, Principal
+from reggraph.security.signing import ResultSigner
 from reggraph.security.tokens import TokenSigner
-from reggraph.storage import Database
+from reggraph.storage import Db, open_database
+from reggraph.stress import StressLab, StressStore
 
 
 @dataclass
 class Services:
     settings: Settings
     clock: Clock
-    db: Database
+    db: Db
     audit: AuditLog
     rules: RuleStore
     registry: EntityStore
@@ -37,6 +39,8 @@ class Services:
     exposure_analysis: ExposureAnalysis
     contracts: ContractStore
     connectivity: Connectivity
+    stress_store: StressStore
+    stress: StressLab
     ratebook: RateBook
     translator: Translator
     signer: TokenSigner
@@ -48,7 +52,7 @@ class Services:
 
 def build_services(settings: Settings, clock: Clock | None = None) -> Services:
     clk = clock or SystemClock()
-    db = Database(settings.db_path)
+    db = open_database(settings.db_path, settings.database_url, settings.database_schema)
     audit = AuditLog(db, clk)
     ratebook = RateBook(db, audit, clk)
     registry = EntityStore(db, audit, clk)
@@ -59,6 +63,17 @@ def build_services(settings: Settings, clock: Clock | None = None) -> Services:
     exposures = ExposureStore(db, audit, clk, registry)
     contracts = ContractStore(db, audit, clk, registry)
     analysis = ExposureAnalysis(exposures, registry, converter_for)
+    stress_store = StressStore(db, audit, clk, registry)
+    stress = StressLab(
+        db,
+        clk,
+        stress_store,
+        exposures,
+        contracts,
+        registry,
+        ResultSigner(settings.token_keys, settings.active_kid),
+        converter_for,
+    )
     return Services(
         settings=settings,
         clock=clk,
@@ -70,6 +85,8 @@ def build_services(settings: Settings, clock: Clock | None = None) -> Services:
         exposure_analysis=analysis,
         contracts=contracts,
         connectivity=Connectivity(analysis, contracts, registry, converter_for),
+        stress_store=stress_store,
+        stress=stress,
         ratebook=ratebook,
         translator=Translator(),
         signer=TokenSigner(settings.token_keys, settings.active_kid, clk),

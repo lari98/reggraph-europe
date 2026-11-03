@@ -1,20 +1,20 @@
 {
   "modules": {
     "api": {
-      "fingerprint": "4c6fa1fa82546a9f6e6e93af96f0e66facc77647ca98ebae30329371770dd475",
+      "fingerprint": "1306d0cdce9bcf9814f76886a5ba29fc2fd910e92ff74d5a5a380af62944abeb",
       "paths": [
         "src/reggraph/api"
       ],
-      "version": "0.3.0"
+      "version": "0.4.0"
     },
     "app-shell": {
-      "fingerprint": "9dfdc709e65275febb36c5742a7b401f16a3757bc2912d7e794c6dec32e49f11",
+      "fingerprint": "4a45f6f5665c9ebed5c3e5fd3727bd949b0abb0041547744e4d19251bdd32e11",
       "paths": [
         "src/reggraph/__init__.py",
         "src/reggraph/config.py",
         "src/reggraph/cli.py"
       ],
-      "version": "0.3.0"
+      "version": "0.4.0"
     },
     "connectivity": {
       "fingerprint": "18b41274f4f6ac93a99944d0de6578ac2868023fed5d402ecb8decad0326e916",
@@ -38,18 +38,18 @@
       "version": "0.2.0"
     },
     "exposure": {
-      "fingerprint": "ddd5d6ebea57fdeea2013d32fb216752d21d0e687153f264d9079b342d9e56c9",
+      "fingerprint": "4c270759f2dde8b134913cf73d14983c96381b867370266b5ef30e7dca315ce3",
       "paths": [
         "src/reggraph/exposure"
       ],
-      "version": "0.1.0"
+      "version": "0.2.0"
     },
     "fx": {
-      "fingerprint": "caf7289a83db4fc5591a3d26e65d0c82edd7e96d4171345b79576dcc367502f4",
+      "fingerprint": "0361f3d29f2e022c60545b5dd2bda30fc8f2e8b6f162935059a32c6b96f37475",
       "paths": [
         "src/reggraph/fx"
       ],
-      "version": "0.1.0"
+      "version": "0.1.1"
     },
     "i18n": {
       "fingerprint": "61d3515921b646ac8e4d7630f832bf5aec8dc9089e7a25aa451ebc900bb2cb52",
@@ -59,11 +59,11 @@
       "version": "0.1.0"
     },
     "insurance": {
-      "fingerprint": "193ce4ab99012ad0504900c07b22c280a04d07087330a6ba156cbee70edb8f12",
+      "fingerprint": "6dabf3e77070d5531ebdb098620757c7eeae513c3a92ebc1b79e45986965f937",
       "paths": [
         "src/reggraph/insurance"
       ],
-      "version": "0.1.0"
+      "version": "0.1.1"
     },
     "jurisdictions": {
       "fingerprint": "8b2102d375f98c87f15a296ae9aa085ac49d8d4b5db61229272e74a40ba08134",
@@ -73,32 +73,39 @@
       "version": "0.1.0"
     },
     "registry": {
-      "fingerprint": "b578875d14480820cdd981a6171e7f98f7e78a7bdeaefe85d923863046cd49b1",
+      "fingerprint": "f1fb524c49491820b6c35f54da9cf5c0961eeaa21da642bd4bf9e8a045d38a1a",
       "paths": [
         "src/reggraph/registry"
       ],
-      "version": "0.2.0"
+      "version": "0.3.0"
     },
     "regulation": {
-      "fingerprint": "9ecdce43c41d0d1d92c39e36ed3d5e4b15178ddc33c64838bf5c440daedd1cd0",
+      "fingerprint": "ac8fa4ab55c4b368916b39428e374a9f64d32880f3559670af13c27725641f6f",
       "paths": [
         "src/reggraph/regulation"
       ],
-      "version": "0.1.0"
+      "version": "0.1.1"
     },
     "security": {
-      "fingerprint": "b63753bc6f627c4d130abd7b802de78da124bd4e490894ae34c4f9c299887aaa",
+      "fingerprint": "b7f807ad8ee7d2b980a2e7eac4ad41a77b35aaf0f67273642ee185366030a574",
       "paths": [
         "src/reggraph/security"
       ],
-      "version": "0.3.0"
+      "version": "0.4.0"
     },
     "storage": {
-      "fingerprint": "9a391db7afcd55a034e5f55de8aef4893271711bd44a67723ccc0a64c0721a53",
+      "fingerprint": "a8a98019e1aa8831e265e48ec649694d20036a7f070c72ac033904ced1820972",
       "paths": [
         "src/reggraph/storage"
       ],
-      "version": "0.3.0"
+      "version": "0.4.0"
+    },
+    "stress": {
+      "fingerprint": "6d1b156a5377bb678a638c8aa9c3f0d91ba0a89a6cd56c50c1ab4060ad0c7328",
+      "paths": [
+        "src/reggraph/stress"
+      ],
+      "version": "0.1.0"
     }
   },
   "schema": 1

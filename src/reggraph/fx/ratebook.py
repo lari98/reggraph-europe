@@ -28,7 +28,7 @@ from reggraph.currency.rates import RateQuote
 from reggraph.security.audit import AuditLog
 from reggraph.security.rbac import Permission, Principal
 from reggraph.security.validation import clean_text
-from reggraph.storage.sqlite import Database
+from reggraph.storage.base import Db
 
 _MAX_RATE = Decimal("10000000")
 _RATE_RE: Final = re.compile(r"[0-9]{1,7}(\.[0-9]{1,10})?")
@@ -38,7 +38,7 @@ _MAX_QUOTES = 40
 class TenantRates:
     """A ``RateProvider`` bound to one tenant."""
 
-    def __init__(self, db: Database, tenant_id: str) -> None:
+    def __init__(self, db: Db, tenant_id: str) -> None:
         self._db = db
         self._tenant = tenant_id
 
@@ -57,7 +57,7 @@ class TenantRates:
 
 
 class RateBook:
-    def __init__(self, db: Database, audit: AuditLog, clock: Clock) -> None:
+    def __init__(self, db: Db, audit: AuditLog, clock: Clock) -> None:
         self._db = db
         self._audit = audit
         self._clock = clock

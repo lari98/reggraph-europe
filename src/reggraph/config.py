@@ -30,7 +30,9 @@ _PLACEHOLDERS: Final = ("change-me", "changeme", "secret", "password", "example"
 class Settings:
     env: str = "dev"
     db_path: str = ":memory:"
-    token_keys: dict[str, bytes] = field(default_factory=dict)
+    database_url: str = field(default="", repr=False)  # holds a password: never printed
+    database_schema: str = "public"
+    token_keys: dict[str, bytes] = field(default_factory=dict, repr=False)
     active_kid: str = ""
     rate_per_minute: int = 120
     rate_burst: int = 30
@@ -45,7 +47,7 @@ class Settings:
             if len(secret) < MIN_SECRET_CHARS:
                 raise ValidationFailure("signing key too short")
         if self.env == "prod":
-            if self.db_path == ":memory:":
+            if self.db_path == ":memory:" and not self.database_url:
                 raise ValidationFailure("prod needs a persistent database")
             for secret in self.token_keys.values():
                 lowered = secret.decode("utf-8", "ignore").lower()
@@ -74,6 +76,8 @@ class Settings:
         return cls(
             env=env.get("REGGRAPH_ENV", "dev"),
             db_path=env.get("REGGRAPH_DB_PATH", ":memory:"),
+            database_url=env.get("REGGRAPH_DATABASE_URL", ""),
+            database_schema=env.get("REGGRAPH_DATABASE_SCHEMA", "public"),
             token_keys=keys,
             active_kid=active,
             rate_per_minute=int(env.get("REGGRAPH_RATE_PER_MINUTE", "120")),

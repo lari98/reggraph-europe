@@ -52,6 +52,7 @@ MODULES: Final[dict[str, tuple[str, ...]]] = {
     "exposure": ("src/reggraph/exposure",),
     "insurance": ("src/reggraph/insurance",),
     "connectivity": ("src/reggraph/connectivity",),
+    "stress": ("src/reggraph/stress",),
     "api": ("src/reggraph/api",),
     "app-shell": (
         "src/reggraph/__init__.py",

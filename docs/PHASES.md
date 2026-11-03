@@ -8,7 +8,7 @@ hardening phase. A phase is *done* only when its exit gate passes.
 | **1 ✅** | Foundation | Regulatory Intelligence (core) · Stage 1 | Jurisdictions, currency, 34 locales, rule store, security core, API, tests, tooling | `make check` green; ≥ 90 % coverage; attacker tests pass |
 | **2 ✅** | Registry | Bank & Corporate Registry · Stage 1 | LEI-keyed entities, licences, ownership and group structures, consolidation basis, entity ↔ rule mapping ([REGISTRY.md](REGISTRY.md)) | Entity data validated (LEI checksum, cycles, 100 % rule); tenant isolation attacks pass |
 | **3 ✅** | Connectivity & graph | Insurance Connectivity, Financial Exposure Graph · Stage 2 | Insurer ↔ bank/corporate contracts, immutable exposure batches with lineage, concentration (HHI), neighbourhood and combined ecosystem graph ([EXPOSURE_AND_INSURANCE.md](EXPOSURE_AND_INSURANCE.md)) | Graph queries reproducible; data lineage recorded |
-| 4 | Stress lab | Stress Testing Laboratory · Stage 3 | Scenario engine, recovery measures, reproducible runs, PostgreSQL storage | Same inputs → same outputs; results signed and versioned |
+| **4 ✅** | Stress lab | Stress Testing Laboratory · Stage 3 | Scenario engine (fx, default with group contagion, haircut, insurer failure), insurance recovery, frozen snapshots, signed and verifiable runs ([STRESS_LAB.md](STRESS_LAB.md)); PostgreSQL storage ([POSTGRESQL.md](POSTGRESQL.md)) | Same inputs → same outputs; results signed and versioned |
 | 5 | Dashboard & integrations | Management Dashboard · Stage 4 | Role-based views, secure connectors (EUR-Lex, ECB rates), SSO / OIDC | Connector sandbox review; no secrets in logs |
 | 6 | Expansion | Stage 5 | FINMA, FCA, SEC, MAS rule packs; more locales and currencies | Native-speaker translation review signed off |
 | 7 | Hardening & release | Whole system | External penetration test, load test, backup / restore drill, threat-model review, release 1.0 | No open high/critical findings |
@@ -23,5 +23,5 @@ hardening phase. A phase is *done* only when its exit gate passes.
 
 ## What the delivered phases deliberately leave out
 
-Stress testing, the dashboard, live data feeds and PostgreSQL. They are scheduled above;
+The dashboard, live data feeds, SSO / OIDC and data migration from SQLite to PostgreSQL. They are scheduled above;
 nothing delivered so far pretends to provide them.

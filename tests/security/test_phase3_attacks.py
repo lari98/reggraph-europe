@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import sqlite3
 from typing import Any
 
 import pytest
@@ -10,7 +9,7 @@ from fastapi.testclient import TestClient
 
 from reggraph.api.deps import Services
 from reggraph.security.rbac import Role
-from tests.conftest import make_lei
+from tests.conftest import DB_ERROR, DB_INTEGRITY, make_lei
 from tests.phase3 import (
     BANK,
     BANK2,
@@ -258,9 +257,9 @@ def test_database_refuses_tampering(
         "DELETE FROM insurance_contract_versions",
     ]
     for sql in statements:
-        with pytest.raises(sqlite3.DatabaseError):
+        with pytest.raises(DB_ERROR):
             services.db.execute(sql)
-    with pytest.raises(sqlite3.IntegrityError):  # the table itself forbids self-exposure
+    with pytest.raises(DB_INTEGRITY):  # the table itself forbids self-exposure
         services.db.execute(
             "INSERT INTO exposure_positions (tenant_id, position_id, batch_id, exposure_ref, holder_lei,"
             " counterparty_lei, exposure_type, currency, amount, as_of, recorded_at)"

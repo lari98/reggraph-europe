@@ -4,11 +4,11 @@
 change, cross-border exposure and resilience across the EU-27, Switzerland, the United
 Kingdom, the United States and Singapore.
 
-> **Status: Phase 3 of 7 complete (foundation, registry, exposure and insurance), release 0.3.0.**
+> **Status: Phase 4 of 7 complete (foundation, registry, exposure, insurance, stress lab, PostgreSQL), release 0.4.0.**
 > This repository implements the platform core described in the *RegGraph Europe – Pitch Pack*:
 > the regulatory-intelligence engine, the bank and corporate registry, insurance connectivity,
-> the financial exposure graph, the security model, multi-language and multi-currency support.
-> Later phases add the stress lab and dashboard (see [docs/PHASES.md](docs/PHASES.md)).
+> the financial exposure graph, the stress testing laboratory, the security model, multi-language
+> and multi-currency support. Later phases add the dashboard and integrations (see [docs/PHASES.md](docs/PHASES.md)).
 
 The platform is **decision support, not legal advice**. Every rule enters the system as a
 draft and becomes effective only after a named compliance officer approves it.
@@ -21,11 +21,13 @@ draft and becomes effective only after a named compliance officer approves it.
 | Registry | LEI-keyed banks, insurers and corporates with licences, versioned history, ownership links, indicative control group on any date, and "which rules apply to this entity" ([docs/REGISTRY.md](docs/REGISTRY.md)) |
 | Exposure graph | Immutable exposure batches with source, hash and loader; converted edges, concentration (shares, HHI, group view), neighbourhoods; every result has lineage and a reproducibility hash ([docs/EXPOSURE_AND_INSURANCE.md](docs/EXPOSURE_AND_INSURANCE.md)) |
 | Insurance connectivity | Versioned insurer-to-insured contracts, reinsurance links, cover concentration, and the *interconnection* view: entities that are both counterparty and insurer |
+| Stress lab | Versioned scenarios (currency fall, default with group contagion, haircut, insurer failure), deterministic engine, insurance recovery, capital-buffer breaches; every run freezes its inputs, is signed and can be re-verified ([docs/STRESS_LAB.md](docs/STRESS_LAB.md)) |
+| Storage | SQLite by default, PostgreSQL by setting `REGGRAPH_DATABASE_URL`; one migration set for both, whole test suite run on both ([docs/POSTGRESQL.md](docs/POSTGRESQL.md)) |
 | Languages | 24 EU official languages + Swiss (de/fr/it/rm), US and UK English, Singapore (English, Chinese, Malay, Tamil) — 34 locale tags, `Accept-Language` negotiation |
 | Currencies | EUR plus the six EU members outside the euro (CZK, DKK, HUF, PLN, RON, SEK), CHF, USD, GBP, SGD; legacy BGN / HRK for old data |
 | Money | `Decimal` only (no floating point), exact half-even rounding, EUR-triangulated conversion, refuses stale rates |
 | Security | Signed tokens with key rotation, role matrix, per-tenant tamper-evident audit chain, rate limiting, strict input hygiene, hardened HTTP headers |
-| Quality gates | 397 tests (176 in the attacker-style security suite), 97.3 % coverage (gate 90 %), ruff, mypy `--strict`, bandit and pip-audit all clean at the Phase 3 release, on Python 3.11 and 3.13 |
+| Quality gates | 500 tests (231 in the attacker-style security suite), 97.5 % coverage (gate 90 %), ruff, mypy `--strict`, bandit and pip-audit all clean at the Phase 4 release, on Python 3.11 and 3.13; the full suite also passes on PostgreSQL 16 |
 | Versioning | Every module has its own version and content fingerprint; CI fails if code changed without a bump |
 
 ## Quick start

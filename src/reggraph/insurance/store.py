@@ -12,7 +12,6 @@ I5    Contract and audit entry commit in one transaction.
 
 from __future__ import annotations
 
-import sqlite3
 from datetime import datetime
 
 from reggraph.core.clock import Clock
@@ -24,21 +23,21 @@ from reggraph.regulation.models import EntityType
 from reggraph.security.audit import AuditLog
 from reggraph.security.rbac import Permission, Principal
 from reggraph.security.validation import clean_text, ensure_identifier
-from reggraph.storage.sqlite import Database
+from reggraph.storage.base import Db, Row
 
 _MAX_PAGE = 200
 _INSURER_TYPES = {EntityType.INSURER, EntityType.REINSURER}
 
 
 class ContractStore:
-    def __init__(self, db: Database, audit: AuditLog, clock: Clock, registry: EntityStore) -> None:
+    def __init__(self, db: Db, audit: AuditLog, clock: Clock, registry: EntityStore) -> None:
         self._db = db
         self._audit = audit
         self._clock = clock
         self._registry = registry
 
     @staticmethod
-    def _to_version(row: sqlite3.Row) -> ContractVersion:
+    def _to_version(row: Row) -> ContractVersion:
         return ContractVersion(
             contract_ref=row["contract_ref"],
             version_no=row["version_no"],

@@ -48,6 +48,14 @@ development `reggraph issue-token`). **Language:** send `Accept-Language`; the r
 | GET | `/v1/entities/{lei}/insurance` | `insurance:read` | cover of an entity on `on`; `by_group` |
 | GET | `/v1/entities/{lei}/interconnection` | `exposure:read` + `insurance:read` | entities that are both counterparty and insurer |
 | GET | `/v1/entities/{lei}/ecosystem` | `exposure:read` + `insurance:read` + `registry:read` | exposure, insurance and ownership edges within `depth` |
+| PUT | `/v1/stress/scenarios/{key}` | `stress:write` | new scenario version (path key must equal body key) |
+| GET | `/v1/stress/scenarios`, `/v1/stress/scenarios/{key}` (`?version=`), `…/history` | `stress:read` | scenarios |
+| POST | `/v1/stress/runs` | `stress:write` + exposure, insurance, registry read | run, sign, store; body: `scenario_key`, optional `scenario_version`, `as_of`, `currency`, `max_batch`, `capital_buffers` |
+| GET | `/v1/stress/runs`, `/v1/stress/runs/{id}` | `stress:read` | run records; one run with result |
+| GET | `/v1/stress/runs/{id}/snapshot` | `stress:read` | the frozen inputs |
+| POST | `/v1/stress/runs/{id}/verify` | `stress:read` | recompute and check hashes and signature |
+
+Stress lab details: [STRESS_LAB.md](STRESS_LAB.md).
 
 Phase 3 details, rules and lineage: [EXPOSURE_AND_INSURANCE.md](EXPOSURE_AND_INSURANCE.md).
 Amounts are decimal strings; `on` defaults to today, `currency` to EUR, and ids in paths are

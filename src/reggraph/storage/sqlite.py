@@ -21,7 +21,7 @@ from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
 from typing import Any, Final
 
-_MIGRATIONS: Final[tuple[tuple[int, str], ...]] = (
+MIGRATIONS: Final[tuple[tuple[int, str], ...]] = (
     (
         1,
         """
@@ -207,6 +207,50 @@ _MIGRATIONS: Final[tuple[tuple[int, str], ...]] = (
         INSERT INTO schema_version VALUES (3, datetime('now'));
         """,
     ),
+    (
+        4,
+        """
+        CREATE TABLE stress_scenario_versions (
+            tenant_id TEXT NOT NULL,
+            scenario_key TEXT NOT NULL,
+            version_no INTEGER NOT NULL,
+            payload_json TEXT NOT NULL,
+            content_hash TEXT NOT NULL,
+            change_summary TEXT NOT NULL,
+            changed_by TEXT NOT NULL,
+            changed_at TEXT NOT NULL,
+            PRIMARY KEY (tenant_id, scenario_key, version_no)
+        );
+        CREATE TABLE stress_runs (
+            tenant_id TEXT NOT NULL,
+            run_id INTEGER NOT NULL,
+            scenario_key TEXT NOT NULL,
+            scenario_version INTEGER NOT NULL,
+            as_of TEXT NOT NULL,
+            currency TEXT NOT NULL,
+            max_batch INTEGER NOT NULL,
+            input_hash TEXT NOT NULL,
+            result_hash TEXT NOT NULL,
+            signature TEXT NOT NULL,
+            scenario_json TEXT NOT NULL,
+            snapshot_json TEXT NOT NULL,
+            result_json TEXT NOT NULL,
+            created_by TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            PRIMARY KEY (tenant_id, run_id)
+        );
+        CREATE INDEX idx_runs_scenario ON stress_runs (tenant_id, scenario_key);
+        CREATE TRIGGER scenario_immutable BEFORE UPDATE ON stress_scenario_versions
+            BEGIN SELECT RAISE(ABORT, 'scenario versions are immutable'); END;
+        CREATE TRIGGER scenario_no_delete BEFORE DELETE ON stress_scenario_versions
+            BEGIN SELECT RAISE(ABORT, 'scenario versions cannot be deleted'); END;
+        CREATE TRIGGER run_immutable BEFORE UPDATE ON stress_runs
+            BEGIN SELECT RAISE(ABORT, 'stress runs are immutable'); END;
+        CREATE TRIGGER run_no_delete BEFORE DELETE ON stress_runs
+            BEGIN SELECT RAISE(ABORT, 'stress runs cannot be deleted'); END;
+        INSERT INTO schema_version VALUES (4, datetime('now'));
+        """,
+    ),
 )
 
 Params = Sequence[Any]
@@ -232,7 +276,7 @@ class Database:
             )
             row = self._conn.execute("SELECT MAX(version) AS v FROM schema_version").fetchone()
             current = int(row["v"] or 0)
-            for version, script in _MIGRATIONS:
+            for version, script in MIGRATIONS:
                 if version > current:
                     # Each script ends with its own ``INSERT INTO schema_version`` so the schema
                     # change and its version record commit together (or not at all).

@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import os
+import sqlite3
+import uuid
 from collections.abc import Callable, Iterator
 from datetime import UTC, datetime
 from typing import Any
@@ -16,6 +19,18 @@ from reggraph.core.clock import FixedClock
 from reggraph.security.rbac import Principal, Role
 
 KEY = b"unit-test-signing-key-0123456789abcdef"
+
+# Set REGGRAPH_TEST_PG_DSN to run the whole suite against PostgreSQL instead of SQLite.
+PG_DSN = os.environ.get("REGGRAPH_TEST_PG_DSN", "")
+
+if PG_DSN:
+    import psycopg
+
+    DB_ERROR: tuple[type[Exception], ...] = (psycopg.Error,)
+    DB_INTEGRITY: tuple[type[Exception], ...] = (psycopg.IntegrityError,)
+else:
+    DB_ERROR = (sqlite3.DatabaseError,)
+    DB_INTEGRITY = (sqlite3.IntegrityError,)
 
 
 def rule_payload(key: str = "EU.CRR3.CET1", **over: Any) -> dict[str, Any]:
@@ -47,8 +62,16 @@ def clock() -> FixedClock:
 
 @pytest.fixture
 def settings() -> Settings:
+    extra: dict[str, Any] = {}
+    if PG_DSN:
+        extra = {"database_url": PG_DSN, "database_schema": f"t_{uuid.uuid4().hex[:16]}"}
     return Settings(
-        env="test", token_keys={"k1": KEY}, active_kid="k1", rate_burst=500, rate_per_minute=5000
+        env="test",
+        token_keys={"k1": KEY},
+        active_kid="k1",
+        rate_burst=500,
+        rate_per_minute=5000,
+        **extra,
     )
 
 
@@ -56,7 +79,10 @@ def settings() -> Settings:
 def app_client(settings: Settings, clock: FixedClock) -> Iterator[TestClient]:
     client = TestClient(create_app(settings, clock), raise_server_exceptions=False)
     yield client
-    client.app.state.services.db.close()  # type: ignore[attr-defined]
+    db = client.app.state.services.db  # type: ignore[attr-defined]
+    if PG_DSN:
+        db.drop_schema()
+    db.close()
 
 
 @pytest.fixture
@@ -98,3 +124,20 @@ def entity_payload(lei: str, **over: Any) -> dict[str, Any]:
     }
     body.update(over)
     return body
+
+
+def table_names(db: Any) -> set[str]:
+    """Names of the tables in the current schema, on either back end."""
+    if PG_DSN:
+        rows = db.query(
+            "SELECT table_name AS name FROM information_schema.tables "
+            "WHERE table_schema = current_schema()"
+        )
+    else:
+        rows = db.query("SELECT name FROM sqlite_master WHERE type='table'")
+    return {r["name"] for r in rows}
+
+
+def drop_trigger(db: Any, name: str, table: str) -> None:
+    """What an attacker with database access would do first (test helper)."""
+    db.execute(f"DROP TRIGGER {name} ON {table}" if PG_DSN else f"DROP TRIGGER {name}")

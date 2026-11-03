@@ -59,6 +59,15 @@ Registry threats (Phase 2) — tests in `tests/security/test_registry_attacks.py
 | T45 | Rewriting exposure or contract history | DB triggers: no update, no delete | `test_database_refuses_tampering` |
 | T46 | Half-loaded batch after a failure | one transaction; nothing stored on error | `test_failed_load_leaves_no_partial_data` |
 | T47 | Server crash (500) from huge path integers — **found by this suite**, also fixed in the Phase 2 end-link route | path integers range-checked (1..2·10⁹) | `test_huge_ids_never_crash_the_server` |
+| T48 | Altering a stored stress result, its signature, inputs or scenario | verify recomputes from the stored snapshot and checks all hashes and the signature | `test_tampering_is_detected` |
+| T49 | Moving a valid signature onto another run | signature covers tenant, run id, scenario@version and both hashes | `test_a_signature_cannot_be_moved_to_another_run` |
+| T50 | Replaying an access-token signature as a result signature (or the reverse) | domain-separated MAC prefix | `test_signer_roundtrip_rotation_and_forgery` |
+| T51 | Reading, running or verifying another tenant's scenarios and runs | tenant from token; 404; foreign and unknown LEIs give identical errors | `test_tenants_are_isolated`, `test_foreign_scenario_leis_look_like_unknown_ones` |
+| T52 | Percentage / buffer abuse (exponent, NaN, float, negative, out of range, 400 digits, floods) | plain-decimal regexes, range checks, size caps | `test_percent_abuse`, `test_buffer_abuse`, `test_scenario_size_limits` |
+| T53 | Rewriting scenario or run history | DB triggers (both back ends) | `test_history_cannot_be_rewritten` |
+| T54 | Database credentials leaking through logs or `repr` | `database_url` excluded from `repr`; documented as a secret | `test_settings_never_print_the_database_url` |
+| T55 | SQL injection / `%` and `?` in data on PostgreSQL | driver-side binding; `%` escaped before placeholder translation | `test_parameters_are_data_not_sql` |
+| T56 | Two processes handing out the same id on PostgreSQL | advisory lock per transaction | `test_concurrent_writers_do_not_collide` |
 
 Property-based tests (`TestProperties`, Hypothesis, 200 examples each) check that
 `clean_text` never returns dangerous characters, `negotiate` always returns a supported tag,
@@ -80,7 +89,7 @@ any letter case and `validate_lei` never crashes on arbitrary text.
 
 External penetration test, fuzzing of the ingestion parsers, load test, container image scan,
 backup/restore drill, and a review of this table against the then-current OWASP ASVS.
-Passing this suite shows the controls above work; it does **not** replace an independent test.
+Run the suite on both back ends before a release (`REGGRAPH_TEST_PG_DSN`). Passing this suite shows the controls above work; it does **not** replace an independent test.
 
 ## If something goes wrong
 

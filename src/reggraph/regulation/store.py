@@ -21,7 +21,6 @@ R7    State change and audit entry are written in one transaction (both or neith
 
 from __future__ import annotations
 
-import sqlite3
 from datetime import date, datetime
 
 from reggraph.core.clock import Clock
@@ -40,18 +39,18 @@ from reggraph.regulation.versioning import diff, is_material
 from reggraph.security.audit import AuditLog
 from reggraph.security.rbac import Permission, Principal
 from reggraph.security.validation import clean_text, ensure_rule_key
-from reggraph.storage.sqlite import Database
+from reggraph.storage.base import Db, Row
 
 
 class RuleStore:
-    def __init__(self, db: Database, audit: AuditLog, clock: Clock) -> None:
+    def __init__(self, db: Db, audit: AuditLog, clock: Clock) -> None:
         self._db = db
         self._audit = audit
         self._clock = clock
 
     # ------------------------------------------------------------------ reading helpers
     @staticmethod
-    def _to_version(r: sqlite3.Row) -> RuleVersion:
+    def _to_version(r: Row) -> RuleVersion:
         return RuleVersion(
             rule_key=r["rule_key"],
             version_no=r["version_no"],

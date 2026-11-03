@@ -18,7 +18,7 @@ from reggraph.registry import groups as g
 from reggraph.security.audit import AuditLog
 from reggraph.security.rbac import Principal, Role
 from reggraph.storage import Database
-from tests.conftest import entity_payload, make_lei
+from tests.conftest import drop_trigger, entity_payload, make_lei
 
 pytestmark = pytest.mark.security
 Auth = Callable[..., dict[str, str]]
@@ -124,7 +124,7 @@ class TestRegistryTenantIsolation:
         actions = [e["action"] for e in app_client.get("/v1/audit", headers=admin).json()]
         assert actions == ["entity.created", "entity.created", "ownership.created"]
         assert app_client.get("/v1/audit/verify", headers=admin).json()["ok"]
-        services.db.execute("DROP TRIGGER audit_no_update")
+        drop_trigger(services.db, "audit_no_update", "audit_log")
         services.db.execute("UPDATE audit_log SET actor = 'user:evil' WHERE n = 2")
         assert not app_client.get("/v1/audit/verify", headers=admin).json()["ok"]
 

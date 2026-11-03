@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from typing import Any, Final
 
 from reggraph.core.clock import Clock
-from reggraph.storage.sqlite import Database
+from reggraph.storage.base import Db
 
 GENESIS: Final = "0" * 64
 
@@ -59,7 +59,7 @@ def _hash(
 
 
 class AuditLog:
-    def __init__(self, db: Database, clock: Clock) -> None:
+    def __init__(self, db: Db, clock: Clock) -> None:
         self._db = db
         self._clock = clock
 

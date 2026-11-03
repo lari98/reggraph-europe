@@ -18,6 +18,7 @@ flowchart TB
       EXP[exposure/<br/>batches, analysis]
       INSU[insurance/<br/>contracts]
       CONN[connectivity/<br/>combined views]
+      STR[stress/<br/>scenarios, engine, signed runs]
       FX[fx/<br/>RateBook]
       CUR[currency/<br/>Money, Converter]
       I18[i18n/<br/>Translator]
@@ -26,14 +27,15 @@ flowchart TB
     subgraph Security["security/"]
       TOK[Tokens] --- RB[RBAC] --- AUD[Audit chain] --- VAL[Validation]
     end
-    DB[(storage/<br/>SQLite → PostgreSQL)]
+    DB[(storage/<br/>SQLite or PostgreSQL)]
     U1 & U2 & U3 & U4 --> MW --> RT
     RT --> REG & REGY & FX & CUR & I18
     REG --> JUR
     REGY --> REG
     EXP & INSU --> REGY
     CONN --> EXP & INSU
-    RT --> CONN
+    RT --> CONN & STR
+    STR --> EXP & INSU
     REG & REGY & FX --> AUD --> DB
     REG & REGY & FX --> DB
     RT --> TOK & RB
@@ -54,7 +56,7 @@ and `security` depend on `core`; `regulation` and `fx` use those; `registry` bui
 | 3 | `regulation`, `fx` | layers 0–2 |
 | 4 | `registry` | layers 0–3 |
 | 5 | `exposure`, `insurance` | layers 0–4 |
-| 6 | `connectivity` | layers 0–5 |
+| 6 | `connectivity`, `stress` | layers 0–5 |
 | 7 | `api`, `cli`, `config` | all |
 
 ## Key design decisions

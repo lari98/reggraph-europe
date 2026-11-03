@@ -11,6 +11,7 @@ from reggraph.insurance import ContractInput
 from reggraph.registry import EntityInput
 from reggraph.regulation.models import RuleInput
 from reggraph.security.validation import clean_text
+from reggraph.stress import ScenarioInput
 
 _Note = Annotated[str, AfterValidator(lambda v: clean_text(v, max_len=500, allow_empty=True))]
 _Summary = Annotated[str, AfterValidator(lambda v: clean_text(v, max_len=500))]
@@ -63,3 +64,17 @@ class EndLinkRequest(_Strict):
 class ContractUpsertRequest(_Strict):
     contract: ContractInput
     change_summary: _Summary
+
+
+class ScenarioUpsertRequest(_Strict):
+    scenario: ScenarioInput
+    change_summary: _Summary
+
+
+class RunRequest(_Strict):
+    scenario_key: str = Field(min_length=1, max_length=64)
+    scenario_version: int | None = Field(default=None, ge=1, le=2_000_000_000)
+    as_of: date | None = None
+    currency: str = Field(default="EUR", pattern=r"^[A-Za-z]{3}$")
+    max_batch: int | None = Field(default=None, ge=0, le=2_000_000_000)
+    capital_buffers: dict[str, str] = Field(default_factory=dict, max_length=200)

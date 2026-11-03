@@ -14,7 +14,6 @@ X6    A batch and its audit entry commit in one transaction.
 
 from __future__ import annotations
 
-import sqlite3
 from datetime import date, datetime
 from decimal import Decimal
 from typing import Final
@@ -25,7 +24,7 @@ from reggraph.exposure.models import Batch, BatchInput, Position, PositionInput
 from reggraph.registry.store import EntityStore
 from reggraph.security.audit import AuditLog
 from reggraph.security.rbac import Permission, Principal
-from reggraph.storage.sqlite import Database
+from reggraph.storage.base import Db, Row
 
 MAX_POSITIONS_PER_TENANT: Final = 1_000_000
 MAX_QUERY_POSITIONS: Final = 50_000
@@ -33,14 +32,14 @@ _MAX_PAGE: Final = 200
 
 
 class ExposureStore:
-    def __init__(self, db: Database, audit: AuditLog, clock: Clock, registry: EntityStore) -> None:
+    def __init__(self, db: Db, audit: AuditLog, clock: Clock, registry: EntityStore) -> None:
         self._db = db
         self._audit = audit
         self._clock = clock
         self._registry = registry
 
     @staticmethod
-    def _to_batch(row: sqlite3.Row) -> Batch:
+    def _to_batch(row: Row) -> Batch:
         return Batch(
             batch_id=row["batch_id"],
             source_system=row["source_system"],
@@ -52,7 +51,7 @@ class ExposureStore:
         )
 
     @staticmethod
-    def _to_position(row: sqlite3.Row) -> Position:
+    def _to_position(row: Row) -> Position:
         maturity = row["maturity_date"]
         return Position(
             position_id=row["position_id"],
@@ -171,6 +170,15 @@ class ExposureStore:
         return self._to_batch(rows[0])
 
     # ------------------------------------------------------------------ reading
+    def latest_batch_id(self, who: Principal) -> int:
+        """Highest batch number of the tenant (0 when nothing is loaded)."""
+        who.require(Permission.EXPOSURE_READ)
+        rows = self._db.query(
+            "SELECT COALESCE(MAX(batch_id), 0) AS n FROM exposure_batches WHERE tenant_id = ?",
+            (who.tenant_id,),
+        )
+        return int(rows[0]["n"])
+
     def get_batch(self, who: Principal, batch_id: int) -> Batch:
         who.require(Permission.EXPOSURE_READ)
         return self._batch(who.tenant_id, batch_id)
@@ -202,7 +210,7 @@ class ExposureStore:
             "  PARTITION BY exposure_ref ORDER BY as_of DESC, position_id DESC) AS rn"
             " FROM exposure_positions p"
             " WHERE tenant_id = ? AND as_of <= ? AND (? IS NULL OR batch_id <= ?)"
-            ") WHERE rn = 1 AND (maturity_date IS NULL OR maturity_date >= ?)"
+            ") ranked WHERE rn = 1 AND (maturity_date IS NULL OR maturity_date >= ?)"
             " AND (? IS NULL OR holder_lei = ?) AND (? IS NULL OR counterparty_lei = ?)"
             " ORDER BY position_id LIMIT ?",
             (

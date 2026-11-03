@@ -43,6 +43,15 @@ GET     /v1/contracts/{ref}/history             insurance:read       all version
 GET     /v1/entities/{lei}/insurance            insurance:read       cover of an entity
 GET     /v1/entities/{lei}/interconnection      exposure+insurance   counterparty and insurer
 GET     /v1/entities/{lei}/ecosystem            exposure+insurance   combined graph
+PUT     /v1/stress/scenarios/{key}              stress:write         new scenario version
+GET     /v1/stress/scenarios                    stress:read          list current scenarios
+GET     /v1/stress/scenarios/{key}              stress:read          current or given version
+GET     /v1/stress/scenarios/{key}/history      stress:read          all versions
+POST    /v1/stress/runs                         stress:write+data    run, sign and store
+GET     /v1/stress/runs                         stress:read          list runs
+GET     /v1/stress/runs/{id}                    stress:read          run and result
+GET     /v1/stress/runs/{id}/snapshot           stress:read          frozen inputs
+POST    /v1/stress/runs/{id}/verify             stress:read          recompute and check
 ======  ======================================  ===================  =====================
 """
 
@@ -587,3 +596,105 @@ def entity_ecosystem(
     return _dump(
         services.connectivity.ecosystem(who, lei, day, currency, depth=depth, max_batch=max_batch)
     )
+
+
+# ------------------------------------------------------------------ stress lab
+_ID = Path(ge=1, le=2_000_000_000)
+
+
+@router.put("/v1/stress/scenarios/{key}")
+def put_scenario(
+    key: str,
+    body: schemas.ScenarioUpsertRequest,
+    who: Principal = Depends(require(Permission.STRESS_WRITE)),
+    services: Services = Depends(get_services),
+) -> dict[str, Any]:
+    if key != body.scenario.scenario_key:
+        raise ValidationFailure("scenario key in the path and in the body differ")
+    return _dump(services.stress_store.upsert_scenario(who, body.scenario, body.change_summary))
+
+
+@router.get("/v1/stress/scenarios")
+def list_scenarios(
+    limit: int = Query(default=50, ge=1, le=200),
+    after: str = Query(default="", max_length=64),
+    who: Principal = Depends(require(Permission.STRESS_READ)),
+    services: Services = Depends(get_services),
+) -> list[dict[str, Any]]:
+    return [_dump(v) for v in services.stress_store.list_scenarios(who, limit=limit, after=after)]
+
+
+@router.get("/v1/stress/scenarios/{key}")
+def get_scenario(
+    key: str,
+    version: int | None = Query(default=None, ge=1, le=2_000_000_000),
+    who: Principal = Depends(require(Permission.STRESS_READ)),
+    services: Services = Depends(get_services),
+) -> dict[str, Any]:
+    return _dump(services.stress_store.get_scenario(who, key, version))
+
+
+@router.get("/v1/stress/scenarios/{key}/history")
+def scenario_history(
+    key: str,
+    who: Principal = Depends(require(Permission.STRESS_READ)),
+    services: Services = Depends(get_services),
+) -> list[dict[str, Any]]:
+    return [_dump(v) for v in services.stress_store.scenario_history(who, key)]
+
+
+@router.post("/v1/stress/runs", status_code=201)
+def start_run(
+    body: schemas.RunRequest,
+    who: Principal = Depends(require(Permission.STRESS_WRITE)),
+    services: Services = Depends(get_services),
+) -> dict[str, Any]:
+    view = services.stress.run(
+        who,
+        body.scenario_key,
+        version=body.scenario_version,
+        on=body.as_of or services.clock.now().date(),
+        currency=body.currency,
+        buffers=body.capital_buffers,
+        max_batch=body.max_batch,
+    )
+    return _dump(view)
+
+
+@router.get("/v1/stress/runs")
+def list_runs(
+    scenario_key: str | None = Query(default=None, max_length=64),
+    limit: int = Query(default=50, ge=1, le=200),
+    after: int = Query(default=0, ge=0, le=2_000_000_000),
+    who: Principal = Depends(require(Permission.STRESS_READ)),
+    services: Services = Depends(get_services),
+) -> list[dict[str, Any]]:
+    runs = services.stress_store.list_runs(who, scenario_key=scenario_key, limit=limit, after=after)
+    return [_dump(r) for r in runs]
+
+
+@router.get("/v1/stress/runs/{run_id}")
+def get_run(
+    run_id: int = _ID,
+    who: Principal = Depends(require(Permission.STRESS_READ)),
+    services: Services = Depends(get_services),
+) -> dict[str, Any]:
+    return _dump(services.stress.get(who, run_id))
+
+
+@router.get("/v1/stress/runs/{run_id}/snapshot")
+def run_snapshot(
+    run_id: int = _ID,
+    who: Principal = Depends(require(Permission.STRESS_READ)),
+    services: Services = Depends(get_services),
+) -> dict[str, Any]:
+    return services.stress.snapshot_of(who, run_id)
+
+
+@router.post("/v1/stress/runs/{run_id}/verify")
+def verify_run(
+    run_id: int = _ID,
+    who: Principal = Depends(require(Permission.STRESS_READ)),
+    services: Services = Depends(get_services),
+) -> dict[str, Any]:
+    return _dump(services.stress.verify(who, run_id))
