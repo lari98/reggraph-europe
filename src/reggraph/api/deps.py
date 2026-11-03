@@ -8,11 +8,14 @@ from dataclasses import dataclass
 from fastapi import Depends, Request
 
 from reggraph.config import Settings
+from reggraph.connectivity import Connectivity
 from reggraph.core.clock import Clock, SystemClock
 from reggraph.core.errors import AuthenticationError
 from reggraph.currency.rates import Converter
+from reggraph.exposure import ExposureAnalysis, ExposureStore
 from reggraph.fx import RateBook
 from reggraph.i18n import Translator
+from reggraph.insurance import ContractStore
 from reggraph.registry import EntityStore
 from reggraph.regulation import RuleStore
 from reggraph.security.audit import AuditLog
@@ -30,6 +33,10 @@ class Services:
     audit: AuditLog
     rules: RuleStore
     registry: EntityStore
+    exposures: ExposureStore
+    exposure_analysis: ExposureAnalysis
+    contracts: ContractStore
+    connectivity: Connectivity
     ratebook: RateBook
     translator: Translator
     signer: TokenSigner
@@ -43,14 +50,27 @@ def build_services(settings: Settings, clock: Clock | None = None) -> Services:
     clk = clock or SystemClock()
     db = Database(settings.db_path)
     audit = AuditLog(db, clk)
+    ratebook = RateBook(db, audit, clk)
+    registry = EntityStore(db, audit, clk)
+
+    def converter_for(tenant_id: str) -> Converter:
+        return Converter(ratebook.provider_for(tenant_id), clk)
+
+    exposures = ExposureStore(db, audit, clk, registry)
+    contracts = ContractStore(db, audit, clk, registry)
+    analysis = ExposureAnalysis(exposures, registry, converter_for)
     return Services(
         settings=settings,
         clock=clk,
         db=db,
         audit=audit,
         rules=RuleStore(db, audit, clk),
-        registry=EntityStore(db, audit, clk),
-        ratebook=RateBook(db, audit, clk),
+        registry=registry,
+        exposures=exposures,
+        exposure_analysis=analysis,
+        contracts=contracts,
+        connectivity=Connectivity(analysis, contracts, registry, converter_for),
+        ratebook=ratebook,
         translator=Translator(),
         signer=TokenSigner(settings.token_keys, settings.active_kid, clk),
         limiter=RateLimiter(clk, per_minute=settings.rate_per_minute, burst=settings.rate_burst),

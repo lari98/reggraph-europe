@@ -15,6 +15,9 @@ flowchart TB
     subgraph Domain
       REG[regulation/<br/>RuleStore]
       REGY[registry/<br/>EntityStore]
+      EXP[exposure/<br/>batches, analysis]
+      INSU[insurance/<br/>contracts]
+      CONN[connectivity/<br/>combined views]
       FX[fx/<br/>RateBook]
       CUR[currency/<br/>Money, Converter]
       I18[i18n/<br/>Translator]
@@ -28,6 +31,9 @@ flowchart TB
     RT --> REG & REGY & FX & CUR & I18
     REG --> JUR
     REGY --> REG
+    EXP & INSU --> REGY
+    CONN --> EXP & INSU
+    RT --> CONN
     REG & REGY & FX --> AUD --> DB
     REG & REGY & FX --> DB
     RT --> TOK & RB
@@ -38,7 +44,7 @@ flowchart TB
 
 Dependencies point **downwards only**. `core` knows nothing; `jurisdictions`, `currency`, `i18n`
 and `security` depend on `core`; `regulation` and `fx` use those; `registry` builds on `regulation`
-(it maps entities to rules); `api` uses everything; nothing imports `api`. A module that breaks this rule fails review.
+(it maps entities to rules); `exposure` and `insurance` build on `registry` (parties must be registered); `connectivity` combines them; `api` uses everything; nothing imports `api`. A module that breaks this rule fails review.
 
 | Layer | Modules | May import |
 |---|---|---|
@@ -47,7 +53,9 @@ and `security` depend on `core`; `regulation` and `fx` use those; `registry` bui
 | 2 | `security` | layers 0–1 |
 | 3 | `regulation`, `fx` | layers 0–2 |
 | 4 | `registry` | layers 0–3 |
-| 5 | `api`, `cli`, `config` | all |
+| 5 | `exposure`, `insurance` | layers 0–4 |
+| 6 | `connectivity` | layers 0–5 |
+| 7 | `api`, `cli`, `config` | all |
 
 ## Key design decisions
 

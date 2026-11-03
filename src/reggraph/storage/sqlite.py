@@ -141,6 +141,72 @@ _MIGRATIONS: Final[tuple[tuple[int, str], ...]] = (
         INSERT INTO schema_version VALUES (2, datetime('now'));
         """,
     ),
+    (
+        3,
+        """
+        CREATE TABLE exposure_batches (
+            tenant_id TEXT NOT NULL,
+            batch_id INTEGER NOT NULL,
+            source_system TEXT NOT NULL,
+            description TEXT NOT NULL,
+            position_count INTEGER NOT NULL,
+            content_hash TEXT NOT NULL,
+            loaded_by TEXT NOT NULL,
+            loaded_at TEXT NOT NULL,
+            PRIMARY KEY (tenant_id, batch_id),
+            UNIQUE (tenant_id, content_hash)
+        );
+        CREATE TABLE exposure_positions (
+            tenant_id TEXT NOT NULL,
+            position_id INTEGER NOT NULL,
+            batch_id INTEGER NOT NULL,
+            exposure_ref TEXT NOT NULL,
+            holder_lei TEXT NOT NULL,
+            counterparty_lei TEXT NOT NULL,
+            exposure_type TEXT NOT NULL,
+            currency TEXT NOT NULL,
+            amount TEXT NOT NULL,
+            as_of TEXT NOT NULL,
+            maturity_date TEXT,
+            source_ref TEXT,
+            recorded_at TEXT NOT NULL,
+            PRIMARY KEY (tenant_id, position_id),
+            CHECK (holder_lei <> counterparty_lei)
+        );
+        CREATE INDEX idx_pos_ref ON exposure_positions (tenant_id, exposure_ref, as_of);
+        CREATE INDEX idx_pos_holder ON exposure_positions (tenant_id, holder_lei);
+        CREATE INDEX idx_pos_cpty ON exposure_positions (tenant_id, counterparty_lei);
+        CREATE TABLE insurance_contract_versions (
+            tenant_id TEXT NOT NULL,
+            contract_ref TEXT NOT NULL,
+            version_no INTEGER NOT NULL,
+            insurer_lei TEXT NOT NULL,
+            insured_lei TEXT NOT NULL,
+            line TEXT NOT NULL,
+            payload_json TEXT NOT NULL,
+            content_hash TEXT NOT NULL,
+            change_summary TEXT NOT NULL,
+            changed_by TEXT NOT NULL,
+            changed_at TEXT NOT NULL,
+            PRIMARY KEY (tenant_id, contract_ref, version_no)
+        );
+        CREATE INDEX idx_ins_insurer ON insurance_contract_versions (tenant_id, insurer_lei);
+        CREATE INDEX idx_ins_insured ON insurance_contract_versions (tenant_id, insured_lei);
+        CREATE TRIGGER batch_immutable BEFORE UPDATE ON exposure_batches
+            BEGIN SELECT RAISE(ABORT, 'exposure batches are immutable'); END;
+        CREATE TRIGGER batch_no_delete BEFORE DELETE ON exposure_batches
+            BEGIN SELECT RAISE(ABORT, 'exposure batches cannot be deleted'); END;
+        CREATE TRIGGER position_immutable BEFORE UPDATE ON exposure_positions
+            BEGIN SELECT RAISE(ABORT, 'exposure positions are immutable'); END;
+        CREATE TRIGGER position_no_delete BEFORE DELETE ON exposure_positions
+            BEGIN SELECT RAISE(ABORT, 'exposure positions cannot be deleted'); END;
+        CREATE TRIGGER contract_immutable BEFORE UPDATE ON insurance_contract_versions
+            BEGIN SELECT RAISE(ABORT, 'contract versions are immutable'); END;
+        CREATE TRIGGER contract_no_delete BEFORE DELETE ON insurance_contract_versions
+            BEGIN SELECT RAISE(ABORT, 'contract versions cannot be deleted'); END;
+        INSERT INTO schema_version VALUES (3, datetime('now'));
+        """,
+    ),
 )
 
 Params = Sequence[Any]

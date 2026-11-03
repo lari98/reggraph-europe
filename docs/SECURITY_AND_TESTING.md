@@ -49,6 +49,16 @@ Registry threats (Phase 2) — tests in `tests/security/test_registry_attacks.py
 | T35 | Cycle bomb / over-100 % through many small links / very deep chains | cycle check, per-day 100 % check, depth + size caps | `TestGraphAbuse` |
 | T36 | Rewriting entity history or ownership links | DB triggers (immutable, no delete, end-once) | `test_database_refuses_edits_to_history` |
 | T37 | Hidden registry edits | every change audited in the same transaction | `test_audit_covers_registry_changes_and_detects_tampering` |
+| T38 | Anonymous or under-privileged access to exposure / insurance data (viewers and machine feeds excluded) | `require(...)` on all 13 routes; data permissions only for analyst, compliance officer, tenant admin | `test_authentication_required`, `test_roles_without_permission_are_refused` |
+| T39 | Reading another tenant's batches, contracts or graph | tenant from token on every query; 404 / empty results | `test_tenants_cannot_see_each_other` |
+| T40 | Probing which LEIs exist in other tenants | unknown and foreign LEIs give byte-identical errors that name none | `test_foreign_and_unknown_leis_look_identical` |
+| T41 | Mass assignment (tenant, batch id, position id, loader, version) | `extra="forbid"` on every body | `test_mass_assignment_is_rejected` |
+| T42 | SQL injection via references, filters, cursors, currency | strict reference regex, parameterised SQL, enum patterns | `test_sql_injection_is_inert` |
+| T43 | Numeric abuse: floats, exponent, NaN, huge, negative, wrong types | `parse_money_amount` before model parsing | `test_malformed_amounts` (18 cases × 2 endpoints) |
+| T44 | Oversized batches / unbounded queries | ≤ 1000 positions, 256 KiB body, 50 000 positions per query (refuse, never truncate) | `test_size_limits`, `test_query_size_guard` |
+| T45 | Rewriting exposure or contract history | DB triggers: no update, no delete | `test_database_refuses_tampering` |
+| T46 | Half-loaded batch after a failure | one transaction; nothing stored on error | `test_failed_load_leaves_no_partial_data` |
+| T47 | Server crash (500) from huge path integers — **found by this suite**, also fixed in the Phase 2 end-link route | path integers range-checked (1..2·10⁹) | `test_huge_ids_never_crash_the_server` |
 
 Property-based tests (`TestProperties`, Hypothesis, 200 examples each) check that
 `clean_text` never returns dangerous characters, `negotiate` always returns a supported tag,

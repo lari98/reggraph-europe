@@ -7,6 +7,7 @@ from typing import Annotated
 
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field
 
+from reggraph.insurance import ContractInput
 from reggraph.registry import EntityInput
 from reggraph.regulation.models import RuleInput
 from reggraph.security.validation import clean_text
@@ -57,3 +58,8 @@ class EntityUpsertRequest(_Strict):
 
 class EndLinkRequest(_Strict):
     effective_until: date
+
+
+class ContractUpsertRequest(_Strict):
+    contract: ContractInput
+    change_summary: _Summary

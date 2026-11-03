@@ -333,6 +333,29 @@ class EntityStore:
         top = groups.ultimate_parent(self._graph(who.tenant_id), key, on)
         return self._current(who.tenant_id, top)
 
+    def existing_leis(self, tenant: str, leis: set[str]) -> set[str]:
+        """Which of ``leis`` are registered for ``tenant``. Internal use by other modules."""
+        found: set[str] = set()
+        for lei in leis:
+            if self._db.query(
+                "SELECT 1 FROM entity_versions WHERE tenant_id = ? AND lei = ? LIMIT 1",
+                (tenant, lei),
+            ):
+                found.add(lei)
+        return found
+
+    def links_on(self, tenant: str, on: date) -> list[groups.Link]:
+        """Ownership links in force on ``on`` for ``tenant`` (internal use by other modules)."""
+        return [
+            lk
+            for lk in self._graph(tenant)
+            if lk.effective_from <= on and (lk.effective_until is None or on <= lk.effective_until)
+        ]
+
+    def ultimate_parent_of(self, tenant: str, lei: str, on: date) -> str:
+        """Top of the control chain for ``lei`` on ``on`` (itself when it has no parent)."""
+        return groups.ultimate_parent(self._graph(tenant), lei, on)
+
     def has_subsidiaries(self, who: Principal, lei: str, on: date) -> bool:
         return bool(self.group(who, lei, on).members)
 

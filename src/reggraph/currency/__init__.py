@@ -2,7 +2,7 @@
 
 from reggraph.currency.codes import CURRENCIES, Currency, get_currency
 from reggraph.currency.format import format_money
-from reggraph.currency.money import Money
+from reggraph.currency.money import Money, parse_money_amount
 from reggraph.currency.rates import Conversion, Converter, InMemoryRates, RateProvider, RateQuote
 
 __all__ = [
@@ -16,4 +16,5 @@ __all__ = [
     "RateQuote",
     "format_money",
     "get_currency",
+    "parse_money_amount",
 ]

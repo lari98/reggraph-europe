@@ -21,7 +21,7 @@ from reggraph.currency import get_currency
 from reggraph.jurisdictions import get_jurisdiction
 from reggraph.registry.lei import validate_lei
 from reggraph.regulation.models import ConsolidationBasis, EntityType
-from reggraph.security.validation import clean_text
+from reggraph.security.validation import IDENT_RE, clean_text
 
 
 def _text(max_len: int) -> AfterValidator:
@@ -34,6 +34,15 @@ Text60 = Annotated[str, _text(60)]
 Text100 = Annotated[str, _text(100)]
 Text200 = Annotated[str, _text(200)]
 Lei = Annotated[str, AfterValidator(validate_lei)]
+
+
+def _ref(value: str) -> str:
+    if not isinstance(value, str) or not IDENT_RE.match(value):
+        raise ValueError("reference may use letters, digits and . _ : @ - (max 64 characters)")
+    return value
+
+
+Ref = Annotated[str, AfterValidator(_ref)]
 
 
 class LicenceType(StrEnum):

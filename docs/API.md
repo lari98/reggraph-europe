@@ -38,6 +38,20 @@ development `reggraph issue-token`). **Language:** send `Accept-Language`; the r
 | GET | `/v1/entities/{lei}/group` | `registry:read` | controlled group on `on` (indicative) |
 | GET | `/v1/entities/{lei}/ultimate-parent` | `registry:read` | top of the group on `on` |
 | GET | `/v1/entities/{lei}/rules` | `registry:read` + `rules:read` | rules that apply to the entity on `on` |
+| POST | `/v1/exposures/batches` | `exposure:write` | load a batch (≤ 1000 positions); 409 if the same content was loaded, 422 if a LEI is not registered |
+| GET | `/v1/exposures/batches`, `/v1/exposures/batches/{id}` | `exposure:read` | batches (source, hash, loader) — the lineage anchor |
+| GET | `/v1/exposures/edges` | `exposure:read` | who is exposed to whom; `on`, `currency` (default EUR), `max_batch` |
+| GET | `/v1/exposures/concentration/{lei}` | `exposure:read` | shares, HHI, top-1/top-3; `by_group` |
+| GET | `/v1/exposures/neighbourhood/{lei}` | `exposure:read` | exposure graph within `depth` 0–4 |
+| PUT | `/v1/contracts/{ref}` | `insurance:write` | new contract version (path ref must equal body ref) |
+| GET | `/v1/contracts`, `/v1/contracts/{ref}`, `/v1/contracts/{ref}/history` | `insurance:read` | filters `insurer`, `insured`, `line`; cursor `after` |
+| GET | `/v1/entities/{lei}/insurance` | `insurance:read` | cover of an entity on `on`; `by_group` |
+| GET | `/v1/entities/{lei}/interconnection` | `exposure:read` + `insurance:read` | entities that are both counterparty and insurer |
+| GET | `/v1/entities/{lei}/ecosystem` | `exposure:read` + `insurance:read` + `registry:read` | exposure, insurance and ownership edges within `depth` |
+
+Phase 3 details, rules and lineage: [EXPOSURE_AND_INSURANCE.md](EXPOSURE_AND_INSURANCE.md).
+Amounts are decimal strings; `on` defaults to today, `currency` to EUR, and ids in paths are
+range-checked (a number beyond the database range is 422, not 500).
 
 Registry details, date rules and examples: [REGISTRY.md](REGISTRY.md). `{lei}` is checked for
 format and check digits (422 if wrong); the LEI in the path and the body of a `PUT` must match.

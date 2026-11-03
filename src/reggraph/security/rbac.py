@@ -16,6 +16,10 @@ Permission matrix (``x`` = granted)::
     audit:read           -        -             -                x               -
     registry:read        x        x             x                x               -
     registry:write       -        x             x                x               -
+    exposure:read        -        x             x                x               -
+    exposure:write       -        x             x                x               -
+    insurance:read       -        x             x                x               -
+    insurance:write      -        x             x                x               -
 
 Separation of duties: a tenant admin cannot approve rules, and nobody can approve a version
 they proposed themselves (the four-eyes rule is enforced in ``RuleStore.approve``).
@@ -51,17 +55,26 @@ class Permission(StrEnum):
     AUDIT_READ = "audit:read"
     REGISTRY_READ = "registry:read"
     REGISTRY_WRITE = "registry:write"
+    EXPOSURE_READ = "exposure:read"
+    EXPOSURE_WRITE = "exposure:write"
+    INSURANCE_READ = "insurance:read"
+    INSURANCE_WRITE = "insurance:write"
 
 
 _P = Permission
 _VIEWER = frozenset({_P.REF_READ, _P.FX_CONVERT, _P.RULES_READ, _P.REGISTRY_READ})
-_ANALYST = _VIEWER | {_P.RULES_PROPOSE, _P.TASKS_READ, _P.REGISTRY_WRITE}
+_DATA = frozenset(
+    {_P.EXPOSURE_READ, _P.EXPOSURE_WRITE, _P.INSURANCE_READ, _P.INSURANCE_WRITE}
+)  # commercially sensitive exposure and insurance data: not for plain viewers
+_ANALYST = _VIEWER | _DATA | {_P.RULES_PROPOSE, _P.TASKS_READ, _P.REGISTRY_WRITE}
 
 ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
     Role.VIEWER: _VIEWER,
     Role.ANALYST: _ANALYST,
     Role.COMPLIANCE_OFFICER: _ANALYST | {_P.RULES_APPROVE, _P.RULES_WITHDRAW},
-    Role.TENANT_ADMIN: _VIEWER | {_P.TASKS_READ, _P.FX_WRITE, _P.AUDIT_READ, _P.REGISTRY_WRITE},
+    Role.TENANT_ADMIN: _VIEWER
+    | _DATA
+    | {_P.TASKS_READ, _P.FX_WRITE, _P.AUDIT_READ, _P.REGISTRY_WRITE},
     Role.INGESTION_SERVICE: frozenset({_P.RULES_INGEST, _P.RULES_READ}),
 }
 

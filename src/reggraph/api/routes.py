@@ -30,6 +30,19 @@ GET     /v1/entities/{lei}/ownership            registry:read        owners and 
 GET     /v1/entities/{lei}/group                registry:read        controlled group on a day
 GET     /v1/entities/{lei}/ultimate-parent      registry:read        top of the group on a day
 GET     /v1/entities/{lei}/rules                registry:read        rules that apply to it
+POST    /v1/exposures/batches                   exposure:write       load an exposure batch
+GET     /v1/exposures/batches                   exposure:read        list batches (lineage)
+GET     /v1/exposures/batches/{id}              exposure:read        one batch
+GET     /v1/exposures/edges                     exposure:read        who is exposed to whom
+GET     /v1/exposures/concentration/{lei}       exposure:read        concentration of a holder
+GET     /v1/exposures/neighbourhood/{lei}       exposure:read        exposure graph around a node
+PUT     /v1/contracts/{ref}                     insurance:write      new contract version
+GET     /v1/contracts                           insurance:read       list current contracts
+GET     /v1/contracts/{ref}                     insurance:read       current version
+GET     /v1/contracts/{ref}/history             insurance:read       all versions
+GET     /v1/entities/{lei}/insurance            insurance:read       cover of an entity
+GET     /v1/entities/{lei}/interconnection      exposure+insurance   counterparty and insurer
+GET     /v1/entities/{lei}/ecosystem            exposure+insurance   combined graph
 ======  ======================================  ===================  =====================
 """
 
@@ -39,7 +52,7 @@ from dataclasses import asdict
 from datetime import date
 from typing import Any
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Path, Query
 from pydantic import BaseModel
 
 from reggraph import __version__
@@ -47,6 +60,7 @@ from reggraph.api import schemas
 from reggraph.api.deps import Services, get_services, require
 from reggraph.core.errors import ValidationFailure
 from reggraph.currency import CURRENCIES, Money, format_money
+from reggraph.exposure import BatchInput
 from reggraph.i18n import SUPPORTED_LOCALES
 from reggraph.jurisdictions import all_jurisdictions, get_jurisdiction
 from reggraph.registry import OwnershipInput, applicable_rules
@@ -318,8 +332,8 @@ def add_ownership(
 
 @router.post("/v1/ownership/{link_id}/end")
 def end_ownership(
-    link_id: int,
     body: schemas.EndLinkRequest,
+    link_id: int = Path(ge=1, le=2_000_000_000),
     who: Principal = Depends(require(Permission.REGISTRY_WRITE)),
     services: Services = Depends(get_services),
 ) -> dict[str, Any]:
@@ -397,3 +411,179 @@ def entity_rules(
         }
         for m in matches
     ]
+
+
+# ------------------------------------------------------------------ exposure graph
+_CCY = Query(default="EUR", pattern="^[A-Za-z]{3}$")
+_MAX_BATCH = Query(default=None, ge=1, le=2_000_000_000)
+
+
+@router.post("/v1/exposures/batches", status_code=201)
+def load_batch(
+    body: BatchInput,
+    who: Principal = Depends(require(Permission.EXPOSURE_WRITE)),
+    services: Services = Depends(get_services),
+) -> dict[str, Any]:
+    return _dump(services.exposures.load_batch(who, body))
+
+
+@router.get("/v1/exposures/batches")
+def list_batches(
+    limit: int = Query(default=50, ge=1, le=200),
+    after: int = Query(default=0, ge=0, le=2_000_000_000),
+    who: Principal = Depends(require(Permission.EXPOSURE_READ)),
+    services: Services = Depends(get_services),
+) -> list[dict[str, Any]]:
+    return [_dump(b) for b in services.exposures.list_batches(who, limit=limit, after=after)]
+
+
+@router.get("/v1/exposures/batches/{batch_id}")
+def get_batch(
+    batch_id: int = Path(ge=1, le=2_000_000_000),
+    who: Principal = Depends(require(Permission.EXPOSURE_READ)),
+    services: Services = Depends(get_services),
+) -> dict[str, Any]:
+    return _dump(services.exposures.get_batch(who, batch_id))
+
+
+@router.get("/v1/exposures/edges")
+def exposure_edges(
+    on: date | None = Query(default=None),
+    currency: str = _CCY,
+    max_batch: int | None = _MAX_BATCH,
+    who: Principal = Depends(require(Permission.EXPOSURE_READ)),
+    services: Services = Depends(get_services),
+) -> dict[str, Any]:
+    day = on or services.clock.now().date()
+    return _dump(services.exposure_analysis.edges(who, day, currency, max_batch=max_batch))
+
+
+@router.get("/v1/exposures/concentration/{lei}")
+def exposure_concentration(
+    lei: str,
+    on: date | None = Query(default=None),
+    currency: str = _CCY,
+    by_group: bool = Query(default=False),
+    max_batch: int | None = _MAX_BATCH,
+    who: Principal = Depends(require(Permission.EXPOSURE_READ)),
+    services: Services = Depends(get_services),
+) -> dict[str, Any]:
+    day = on or services.clock.now().date()
+    return _dump(
+        services.exposure_analysis.concentration(
+            who, lei, day, currency, by_group=by_group, max_batch=max_batch
+        )
+    )
+
+
+@router.get("/v1/exposures/neighbourhood/{lei}")
+def exposure_neighbourhood(
+    lei: str,
+    on: date | None = Query(default=None),
+    currency: str = _CCY,
+    depth: int = Query(default=2, ge=0, le=4),
+    max_batch: int | None = _MAX_BATCH,
+    who: Principal = Depends(require(Permission.EXPOSURE_READ)),
+    services: Services = Depends(get_services),
+) -> dict[str, Any]:
+    day = on or services.clock.now().date()
+    return _dump(
+        services.exposure_analysis.neighbourhood(
+            who, lei, day, currency, depth=depth, max_batch=max_batch
+        )
+    )
+
+
+# ------------------------------------------------------------------ insurance
+@router.put("/v1/contracts/{ref}")
+def put_contract(
+    ref: str,
+    body: schemas.ContractUpsertRequest,
+    who: Principal = Depends(require(Permission.INSURANCE_WRITE)),
+    services: Services = Depends(get_services),
+) -> dict[str, Any]:
+    if ref != body.contract.contract_ref:
+        raise ValidationFailure("contract reference in the path and in the body differ")
+    return _dump(services.contracts.upsert(who, body.contract, body.change_summary))
+
+
+@router.get("/v1/contracts")
+def list_contracts(
+    insurer: str | None = Query(default=None, max_length=20),
+    insured: str | None = Query(default=None, max_length=20),
+    line: str | None = Query(
+        default=None, pattern="^(life|non_life|health|credit_and_surety|reinsurance)$"
+    ),
+    limit: int = Query(default=50, ge=1, le=200),
+    after: str = Query(default="", max_length=64),
+    who: Principal = Depends(require(Permission.INSURANCE_READ)),
+    services: Services = Depends(get_services),
+) -> list[dict[str, Any]]:
+    found = services.contracts.list_contracts(
+        who, insurer=insurer, insured=insured, line=line, limit=limit, after=after
+    )
+    return [_dump(v) for v in found]
+
+
+@router.get("/v1/contracts/{ref}")
+def get_contract(
+    ref: str,
+    who: Principal = Depends(require(Permission.INSURANCE_READ)),
+    services: Services = Depends(get_services),
+) -> dict[str, Any]:
+    return _dump(services.contracts.get(who, ref))
+
+
+@router.get("/v1/contracts/{ref}/history")
+def contract_history(
+    ref: str,
+    who: Principal = Depends(require(Permission.INSURANCE_READ)),
+    services: Services = Depends(get_services),
+) -> list[dict[str, Any]]:
+    return [_dump(v) for v in services.contracts.history(who, ref)]
+
+
+@router.get("/v1/entities/{lei}/insurance")
+def entity_insurance(
+    lei: str,
+    on: date | None = Query(default=None),
+    currency: str = _CCY,
+    by_group: bool = Query(default=False),
+    who: Principal = Depends(require(Permission.INSURANCE_READ)),
+    services: Services = Depends(get_services),
+) -> dict[str, Any]:
+    day = on or services.clock.now().date()
+    return _dump(
+        services.connectivity.insurance_profile(who, lei, day, currency, by_group=by_group)
+    )
+
+
+@router.get("/v1/entities/{lei}/interconnection")
+def entity_interconnection(
+    lei: str,
+    on: date | None = Query(default=None),
+    currency: str = _CCY,
+    max_batch: int | None = _MAX_BATCH,
+    who: Principal = Depends(require(Permission.EXPOSURE_READ)),
+    services: Services = Depends(get_services),
+) -> dict[str, Any]:
+    day = on or services.clock.now().date()
+    return _dump(
+        services.connectivity.interconnection(who, lei, day, currency, max_batch=max_batch)
+    )
+
+
+@router.get("/v1/entities/{lei}/ecosystem")
+def entity_ecosystem(
+    lei: str,
+    on: date | None = Query(default=None),
+    currency: str = _CCY,
+    depth: int = Query(default=2, ge=0, le=4),
+    max_batch: int | None = _MAX_BATCH,
+    who: Principal = Depends(require(Permission.EXPOSURE_READ)),
+    services: Services = Depends(get_services),
+) -> dict[str, Any]:
+    day = on or services.clock.now().date()
+    return _dump(
+        services.connectivity.ecosystem(who, lei, day, currency, depth=depth, max_batch=max_batch)
+    )

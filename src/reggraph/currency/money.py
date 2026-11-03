@@ -44,6 +44,20 @@ def parse_amount(value: str | int | Decimal) -> Decimal:
     return Decimal(value)
 
 
+def parse_money_amount(value: object, currency: str, *, allow_negative: bool = False) -> Decimal:
+    """Strict amount for API input, rounded to the currency's minor units.
+
+    Accepts plain decimal text, an int or a Decimal. Refuses float, bool, exponent notation,
+    spaces, anything over 15 digits, and (by default) negative values.
+    """
+    if not isinstance(value, str | int | Decimal):
+        raise ValidationFailure("amount must be a decimal string or an integer")
+    amount = Money(parse_amount(value), currency).amount
+    if amount < 0 and not allow_negative:
+        raise ValidationFailure("amount must not be negative")
+    return amount
+
+
 def _currency_or_fail(code: str) -> Currency:
     currency = get_currency(code)
     if currency is None:
