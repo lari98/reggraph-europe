@@ -1,0 +1,20 @@
+{
+  "_meta": {
+    "review_status": "machine-draft: needs native-speaker review before release"
+  },
+  "status.ok": "Palvelu toimii normaalisti.",
+  "error.not_found": "Pyydettyä kohdetta ei löytynyt.",
+  "error.forbidden": "Sinulla ei ole oikeutta tähän toimintoon.",
+  "error.invalid_input": "Syöte ei kelpaa.",
+  "error.unauthenticated": "Tunnistautuminen vaaditaan.",
+  "error.rate_limited": "Liian monta pyyntöä. Yritä myöhemmin uudelleen.",
+  "error.internal": "Tapahtui sisäinen virhe.",
+  "error.conflict": "Muutos on ristiriidassa nykytilan kanssa.",
+  "rule.status.draft": "Luonnos",
+  "rule.status.approved": "Hyväksytty",
+  "rule.status.superseded": "Korvattu",
+  "rule.status.withdrawn": "Peruutettu",
+  "rule.status.rejected": "Hylätty",
+  "notice.human_approval": "Tämä muutos tulee voimaan vasta ihmisen hyväksynnän jälkeen.",
+  "notice.decision_support": "Alusta tukee päätöksentekoa; se ei korvaa valvojia eikä anna oikeudellisesti sitovia ohjeita."
+}

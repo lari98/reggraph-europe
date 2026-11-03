@@ -1,0 +1,20 @@
+{
+  "_meta": {
+    "review_status": "machine-draft: needs native-speaker review before release"
+  },
+  "status.ok": "Serviciul funcționează normal.",
+  "error.not_found": "Elementul solicitat nu a fost găsit.",
+  "error.forbidden": "Nu aveți permisiunea de a face acest lucru.",
+  "error.invalid_input": "Datele introduse nu sunt valide.",
+  "error.unauthenticated": "Este necesară autentificarea.",
+  "error.rate_limited": "Prea multe cereri. Încercați din nou mai târziu.",
+  "error.internal": "A apărut o eroare internă.",
+  "error.conflict": "Această modificare intră în conflict cu starea curentă.",
+  "rule.status.draft": "Ciornă",
+  "rule.status.approved": "Aprobat",
+  "rule.status.superseded": "Înlocuit",
+  "rule.status.withdrawn": "Retras",
+  "rule.status.rejected": "Respins",
+  "notice.human_approval": "Această modificare intră în vigoare numai după aprobarea de către un om.",
+  "notice.decision_support": "Platforma sprijină luarea deciziilor; nu înlocuiește autoritățile de supraveghere și nu oferă instrucțiuni obligatorii din punct de vedere juridic."
+}

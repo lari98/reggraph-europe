@@ -1,0 +1,20 @@
+{
+  "_meta": {
+    "review_status": "machine-draft: needs native-speaker review before release"
+  },
+  "status.ok": "Služba funguje normálně.",
+  "error.not_found": "Požadovaná položka nebyla nalezena.",
+  "error.forbidden": "K této akci nemáte oprávnění.",
+  "error.invalid_input": "Zadané údaje nejsou platné.",
+  "error.unauthenticated": "Je vyžadováno ověření.",
+  "error.rate_limited": "Příliš mnoho požadavků. Zkuste to prosím později.",
+  "error.internal": "Došlo k vnitřní chybě.",
+  "error.conflict": "Tato změna je v rozporu s aktuálním stavem.",
+  "rule.status.draft": "Koncept",
+  "rule.status.approved": "Schváleno",
+  "rule.status.superseded": "Nahrazeno",
+  "rule.status.withdrawn": "Staženo",
+  "rule.status.rejected": "Zamítnuto",
+  "notice.human_approval": "Tato změna nabude účinnosti až po schválení člověkem.",
+  "notice.decision_support": "Platforma podporuje rozhodování; nenahrazuje orgány dohledu ani nedává právně závazné pokyny."
+}

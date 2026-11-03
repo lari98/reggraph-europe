@@ -1,0 +1,20 @@
+{
+  "_meta": {
+    "review_status": "machine-draft: needs native-speaker review before release"
+  },
+  "status.ok": "Pakalpojums darbojas normāli.",
+  "error.not_found": "Pieprasītais vienums netika atrasts.",
+  "error.forbidden": "Jums nav atļaujas to darīt.",
+  "error.invalid_input": "Ievadītie dati nav derīgi.",
+  "error.unauthenticated": "Nepieciešama autentifikācija.",
+  "error.rate_limited": "Pārāk daudz pieprasījumu. Mēģiniet vēlreiz vēlāk.",
+  "error.internal": "Radās iekšēja kļūda.",
+  "error.conflict": "Šīs izmaiņas ir pretrunā ar pašreizējo stāvokli.",
+  "rule.status.draft": "Melnraksts",
+  "rule.status.approved": "Apstiprināts",
+  "rule.status.superseded": "Aizstāts",
+  "rule.status.withdrawn": "Atsaukts",
+  "rule.status.rejected": "Noraidīts",
+  "notice.human_approval": "Šīs izmaiņas stājas spēkā tikai pēc cilvēka apstiprinājuma.",
+  "notice.decision_support": "Platforma atbalsta lēmumu pieņemšanu; tā neaizstāj uzraudzības iestādes un nesniedz juridiski saistošus norādījumus."
+}

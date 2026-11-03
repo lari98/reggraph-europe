@@ -1,0 +1,20 @@
+{
+  "_meta": {
+    "review_status": "reference-english"
+  },
+  "status.ok": "Service is operating normally.",
+  "error.not_found": "The requested item was not found.",
+  "error.forbidden": "You do not have permission to do this.",
+  "error.invalid_input": "The input is not valid.",
+  "error.unauthenticated": "Authentication is required.",
+  "error.rate_limited": "Too many requests. Please try again later.",
+  "error.internal": "An internal error occurred.",
+  "error.conflict": "This change conflicts with the current state.",
+  "rule.status.draft": "Draft",
+  "rule.status.approved": "Approved",
+  "rule.status.superseded": "Superseded",
+  "rule.status.withdrawn": "Withdrawn",
+  "rule.status.rejected": "Rejected",
+  "notice.human_approval": "This change takes effect only after human approval.",
+  "notice.decision_support": "This platform supports decisions; it does not replace supervisors or give legally binding instructions."
+}

@@ -1,0 +1,20 @@
+{
+  "_meta": {
+    "review_status": "machine-draft: needs native-speaker review before release"
+  },
+  "status.ok": "A szolgáltatás normálisan működik.",
+  "error.not_found": "A kért elem nem található.",
+  "error.forbidden": "Ehhez nincs jogosultsága.",
+  "error.invalid_input": "A bevitt adat érvénytelen.",
+  "error.unauthenticated": "Hitelesítés szükséges.",
+  "error.rate_limited": "Túl sok kérés. Kérjük, próbálja újra később.",
+  "error.internal": "Belső hiba történt.",
+  "error.conflict": "Ez a módosítás ütközik a jelenlegi állapottal.",
+  "rule.status.draft": "Piszkozat",
+  "rule.status.approved": "Jóváhagyva",
+  "rule.status.superseded": "Lecserélve",
+  "rule.status.withdrawn": "Visszavonva",
+  "rule.status.rejected": "Elutasítva",
+  "notice.human_approval": "Ez a módosítás csak emberi jóváhagyás után lép hatályba.",
+  "notice.decision_support": "A platform döntéstámogató eszköz; nem helyettesíti a felügyeleti hatóságokat, és nem ad jogilag kötelező utasításokat."
+}

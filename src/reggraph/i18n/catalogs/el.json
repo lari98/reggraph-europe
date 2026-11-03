@@ -1,0 +1,20 @@
+{
+  "_meta": {
+    "review_status": "machine-draft: needs native-speaker review before release"
+  },
+  "status.ok": "Η υπηρεσία λειτουργεί κανονικά.",
+  "error.not_found": "Το στοιχείο που ζητήθηκε δεν βρέθηκε.",
+  "error.forbidden": "Δεν έχετε δικαίωμα να το κάνετε αυτό.",
+  "error.invalid_input": "Η καταχώριση δεν είναι έγκυρη.",
+  "error.unauthenticated": "Απαιτείται ταυτοποίηση.",
+  "error.rate_limited": "Πάρα πολλά αιτήματα. Δοκιμάστε ξανά αργότερα.",
+  "error.internal": "Παρουσιάστηκε εσωτερικό σφάλμα.",
+  "error.conflict": "Αυτή η αλλαγή έρχεται σε σύγκρουση με την τρέχουσα κατάσταση.",
+  "rule.status.draft": "Πρόχειρο",
+  "rule.status.approved": "Εγκρίθηκε",
+  "rule.status.superseded": "Αντικαταστάθηκε",
+  "rule.status.withdrawn": "Αποσύρθηκε",
+  "rule.status.rejected": "Απορρίφθηκε",
+  "notice.human_approval": "Αυτή η αλλαγή τίθεται σε ισχύ μόνο μετά από έγκριση από άνθρωπο.",
+  "notice.decision_support": "Η πλατφόρμα υποστηρίζει τη λήψη αποφάσεων· δεν αντικαθιστά τις εποπτικές αρχές ούτε δίνει νομικά δεσμευτικές οδηγίες."
+}

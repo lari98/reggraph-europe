@@ -1,0 +1,81 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "reggraph-europe"
+version = "0.1.0"
+description = "RegGraph Europe - EU-Swiss financial resilience and regulatory intelligence platform (decision support)"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Proprietary" }
+dependencies = [
+    "fastapi>=0.115",
+    "pydantic>=2.7",
+    "uvicorn>=0.30",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "pytest-cov>=5",
+    "httpx>=0.27",
+    "hypothesis>=6.100",
+    "ruff>=0.5",
+    "mypy>=1.10",
+    "bandit>=1.7",
+    "pip-audit>=2.7",
+]
+
+[project.scripts]
+reggraph = "reggraph.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"reggraph.i18n" = ["catalogs/*.json"]
+
+# ----------------------------------------------------------------- quality gates
+[tool.pytest.ini_options]
+pythonpath = ["src", "."]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers --cov=reggraph --cov-fail-under=90"
+filterwarnings = [
+    # throwaway in-memory test databases are closed by garbage collection
+    "ignore::ResourceWarning",
+]
+markers = [
+    "security: attack / abuse-case tests (the 'hacking tests')",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests", "tools"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "S", "C4", "SIM", "RUF", "PT", "DTZ", "T20"]
+ignore = [
+    "S101",  # assert is used in tests only; production code does not rely on it
+    "N818",  # domain errors are named for what happened (ValidationFailure), not *Error
+]
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "reggraph.api.deps.require"]  # FastAPI idiom for dependencies
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S105", "S106", "S608", "T20", "PT011", "PT018", "RUF043", "RUF059", "RUF012",
+              "E501", "B008"]
+"src/reggraph/currency/format.py" = ["RUF001", "RUF002"]  # NBSP / NNBSP / typographic apostrophe
+"src/reggraph/i18n/locales.py" = ["RUF001"]  # native-language names use full-width punctuation
+"src/reggraph/jurisdictions/registry.py" = ["S105"]  # "EU" is a scope token, not a password
+"tools/**" = ["T20"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+files = ["src", "tools"]
+
+[tool.bandit]
+exclude_dirs = ["tests"]

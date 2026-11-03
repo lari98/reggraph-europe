@@ -1,0 +1,20 @@
+{
+  "_meta": {
+    "review_status": "machine-draft: needs native-speaker review before release"
+  },
+  "status.ok": "Der Dienst arbeitet normal.",
+  "error.not_found": "Das angeforderte Element wurde nicht gefunden.",
+  "error.forbidden": "Sie haben dafür keine Berechtigung.",
+  "error.invalid_input": "Die Eingabe ist ungültig.",
+  "error.unauthenticated": "Authentifizierung erforderlich.",
+  "error.rate_limited": "Zu viele Anfragen. Bitte später erneut versuchen.",
+  "error.internal": "Es ist ein interner Fehler aufgetreten.",
+  "error.conflict": "Diese Änderung steht im Konflikt mit dem aktuellen Stand.",
+  "rule.status.draft": "Entwurf",
+  "rule.status.approved": "Genehmigt",
+  "rule.status.superseded": "Ersetzt",
+  "rule.status.withdrawn": "Zurückgezogen",
+  "rule.status.rejected": "Abgelehnt",
+  "notice.human_approval": "Diese Änderung wird erst nach menschlicher Freigabe wirksam.",
+  "notice.decision_support": "Die Plattform unterstützt Entscheidungen; sie ersetzt keine Aufsichtsbehörden und erteilt keine rechtlich bindenden Anweisungen."
+}

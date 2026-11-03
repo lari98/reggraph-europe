@@ -1,0 +1,20 @@
+{
+  "_meta": {
+    "review_status": "machine-draft: needs native-speaker review before release"
+  },
+  "status.ok": "Storitev deluje normalno.",
+  "error.not_found": "Zahtevanega elementa ni mogoče najti.",
+  "error.forbidden": "Za to nimate dovoljenja.",
+  "error.invalid_input": "Vnos ni veljaven.",
+  "error.unauthenticated": "Zahtevana je overitev.",
+  "error.rate_limited": "Preveč zahtev. Poskusite znova pozneje.",
+  "error.internal": "Prišlo je do notranje napake.",
+  "error.conflict": "Ta sprememba je v nasprotju s trenutnim stanjem.",
+  "rule.status.draft": "Osnutek",
+  "rule.status.approved": "Odobreno",
+  "rule.status.superseded": "Nadomeščeno",
+  "rule.status.withdrawn": "Umaknjeno",
+  "rule.status.rejected": "Zavrnjeno",
+  "notice.human_approval": "Ta sprememba začne veljati šele po človeški odobritvi.",
+  "notice.decision_support": "Platforma podpira odločanje; ne nadomešča nadzornih organov in ne daje pravno zavezujočih navodil."
+}

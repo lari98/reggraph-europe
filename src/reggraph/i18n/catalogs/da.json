@@ -1,0 +1,20 @@
+{
+  "_meta": {
+    "review_status": "machine-draft: needs native-speaker review before release"
+  },
+  "status.ok": "Tjenesten kører normalt.",
+  "error.not_found": "Det ønskede element blev ikke fundet.",
+  "error.forbidden": "Du har ikke tilladelse til dette.",
+  "error.invalid_input": "Indtastningen er ikke gyldig.",
+  "error.unauthenticated": "Godkendelse er påkrævet.",
+  "error.rate_limited": "For mange forespørgsler. Prøv igen senere.",
+  "error.internal": "Der opstod en intern fejl.",
+  "error.conflict": "Denne ændring er i strid med den aktuelle tilstand.",
+  "rule.status.draft": "Udkast",
+  "rule.status.approved": "Godkendt",
+  "rule.status.superseded": "Erstattet",
+  "rule.status.withdrawn": "Trukket tilbage",
+  "rule.status.rejected": "Afvist",
+  "notice.human_approval": "Denne ændring træder først i kraft efter menneskelig godkendelse.",
+  "notice.decision_support": "Platformen understøtter beslutninger; den erstatter ikke tilsynsmyndigheder og giver ikke juridisk bindende instrukser."
+}

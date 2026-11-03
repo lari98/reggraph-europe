@@ -1,0 +1,20 @@
+{
+  "_meta": {
+    "review_status": "machine-draft: needs native-speaker review before release"
+  },
+  "status.ok": "Usluga radi normalno.",
+  "error.not_found": "Traženi element nije pronađen.",
+  "error.forbidden": "Nemate dopuštenje za ovu radnju.",
+  "error.invalid_input": "Unos nije valjan.",
+  "error.unauthenticated": "Potrebna je autentifikacija.",
+  "error.rate_limited": "Previše zahtjeva. Pokušajte ponovno kasnije.",
+  "error.internal": "Došlo je do interne pogreške.",
+  "error.conflict": "Ova promjena je u sukobu s trenutnim stanjem.",
+  "rule.status.draft": "Nacrt",
+  "rule.status.approved": "Odobreno",
+  "rule.status.superseded": "Zamijenjeno",
+  "rule.status.withdrawn": "Povučeno",
+  "rule.status.rejected": "Odbijeno",
+  "notice.human_approval": "Ova promjena stupa na snagu tek nakon odobrenja čovjeka.",
+  "notice.decision_support": "Platforma podržava odlučivanje; ne zamjenjuje nadzorna tijela niti daje pravno obvezujuće upute."
+}

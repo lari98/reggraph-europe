@@ -1,0 +1,20 @@
+{
+  "_meta": {
+    "review_status": "machine-draft: needs native-speaker review before release"
+  },
+  "status.ok": "De dienst werkt normaal.",
+  "error.not_found": "Het gevraagde item is niet gevonden.",
+  "error.forbidden": "U hebt hiervoor geen toestemming.",
+  "error.invalid_input": "De invoer is niet geldig.",
+  "error.unauthenticated": "Authenticatie is vereist.",
+  "error.rate_limited": "Te veel verzoeken. Probeer het later opnieuw.",
+  "error.internal": "Er is een interne fout opgetreden.",
+  "error.conflict": "Deze wijziging botst met de huidige status.",
+  "rule.status.draft": "Concept",
+  "rule.status.approved": "Goedgekeurd",
+  "rule.status.superseded": "Vervangen",
+  "rule.status.withdrawn": "Ingetrokken",
+  "rule.status.rejected": "Afgewezen",
+  "notice.human_approval": "Deze wijziging gaat pas in na goedkeuring door een mens.",
+  "notice.decision_support": "Het platform ondersteunt besluitvorming; het vervangt geen toezichthouders en geeft geen juridisch bindende instructies."
+}

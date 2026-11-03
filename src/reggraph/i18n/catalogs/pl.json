@@ -1,0 +1,20 @@
+{
+  "_meta": {
+    "review_status": "machine-draft: needs native-speaker review before release"
+  },
+  "status.ok": "Usługa działa prawidłowo.",
+  "error.not_found": "Nie znaleziono żądanego elementu.",
+  "error.forbidden": "Nie masz uprawnień do wykonania tej czynności.",
+  "error.invalid_input": "Wprowadzone dane są nieprawidłowe.",
+  "error.unauthenticated": "Wymagane jest uwierzytelnienie.",
+  "error.rate_limited": "Zbyt wiele żądań. Spróbuj ponownie później.",
+  "error.internal": "Wystąpił błąd wewnętrzny.",
+  "error.conflict": "Ta zmiana jest sprzeczna z bieżącym stanem.",
+  "rule.status.draft": "Wersja robocza",
+  "rule.status.approved": "Zatwierdzono",
+  "rule.status.superseded": "Zastąpiono",
+  "rule.status.withdrawn": "Wycofano",
+  "rule.status.rejected": "Odrzucono",
+  "notice.human_approval": "Ta zmiana wchodzi w życie dopiero po zatwierdzeniu przez człowieka.",
+  "notice.decision_support": "Platforma wspiera podejmowanie decyzji; nie zastępuje organów nadzoru i nie wydaje prawnie wiążących poleceń."
+}

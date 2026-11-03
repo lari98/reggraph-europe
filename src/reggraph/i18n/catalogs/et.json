@@ -1,0 +1,20 @@
+{
+  "_meta": {
+    "review_status": "machine-draft: needs native-speaker review before release"
+  },
+  "status.ok": "Teenus töötab normaalselt.",
+  "error.not_found": "Soovitud kirjet ei leitud.",
+  "error.forbidden": "Teil puudub selleks luba.",
+  "error.invalid_input": "Sisestatud andmed ei kehti.",
+  "error.unauthenticated": "Vajalik on autentimine.",
+  "error.rate_limited": "Liiga palju päringuid. Proovige hiljem uuesti.",
+  "error.internal": "Tekkis sisemine viga.",
+  "error.conflict": "See muudatus on vastuolus praeguse olekuga.",
+  "rule.status.draft": "Mustand",
+  "rule.status.approved": "Kinnitatud",
+  "rule.status.superseded": "Asendatud",
+  "rule.status.withdrawn": "Tagasi võetud",
+  "rule.status.rejected": "Tagasi lükatud",
+  "notice.human_approval": "See muudatus jõustub alles pärast inimese kinnitust.",
+  "notice.decision_support": "Platvorm toetab otsuste tegemist; see ei asenda järelevalveasutusi ega anna õiguslikult siduvaid juhiseid."
+}

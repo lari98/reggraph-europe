@@ -1,0 +1,20 @@
+{
+  "_meta": {
+    "review_status": "machine-draft: needs native-speaker review before release"
+  },
+  "status.ok": "服务运行正常。",
+  "error.not_found": "未找到所请求的项目。",
+  "error.forbidden": "您无权执行此操作。",
+  "error.invalid_input": "输入无效。",
+  "error.unauthenticated": "需要身份验证。",
+  "error.rate_limited": "请求过多，请稍后再试。",
+  "error.internal": "发生内部错误。",
+  "error.conflict": "此更改与当前状态冲突。",
+  "rule.status.draft": "草稿",
+  "rule.status.approved": "已批准",
+  "rule.status.superseded": "已被取代",
+  "rule.status.withdrawn": "已撤回",
+  "rule.status.rejected": "已拒绝",
+  "notice.human_approval": "此更改须经人工批准后方可生效。",
+  "notice.decision_support": "本平台仅辅助决策，不取代监管机构，也不提供具有法律约束力的指示。"
+}

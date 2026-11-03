@@ -1,0 +1,20 @@
+{
+  "_meta": {
+    "review_status": "machine-draft: needs native-speaker review before release"
+  },
+  "status.ok": "Is-servizz qed jaħdem normalment.",
+  "error.not_found": "L-element mitlub ma nstabx.",
+  "error.forbidden": "M'għandekx permess tagħmel dan.",
+  "error.invalid_input": "L-input mhuwiex validu.",
+  "error.unauthenticated": "Meħtieġa l-awtentikazzjoni.",
+  "error.rate_limited": "Wisq talbiet. Erġa' pprova aktar tard.",
+  "error.internal": "Seħħet żball intern.",
+  "error.conflict": "Dan il-bidla tmur kontra l-istat preżenti.",
+  "rule.status.draft": "Abbozz",
+  "rule.status.approved": "Approvat",
+  "rule.status.superseded": "Mibdul",
+  "rule.status.withdrawn": "Irtirat",
+  "rule.status.rejected": "Miċħud",
+  "notice.human_approval": "Dan il-bidla tidħol fis-seħħ biss wara approvazzjoni minn bniedem.",
+  "notice.decision_support": "Il-pjattaforma tappoġġa d-deċiżjonijiet; ma tissostitwix lill-awtoritajiet superviżorji u ma tagħtix struzzjonijiet legalment vinkolanti."
+}

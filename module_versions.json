@@ -1,0 +1,77 @@
+{
+  "modules": {
+    "api": {
+      "fingerprint": "af5e75018fa50abcbcf9c1bc5241ac777354b0645cbbf9bedfbc6c77b7dc36ce",
+      "paths": [
+        "src/reggraph/api"
+      ],
+      "version": "0.1.0"
+    },
+    "app-shell": {
+      "fingerprint": "ecea3f5726dc3224194f282237073a70094ee71f2589295b3190cec5dc490a15",
+      "paths": [
+        "src/reggraph/__init__.py",
+        "src/reggraph/config.py",
+        "src/reggraph/cli.py"
+      ],
+      "version": "0.1.0"
+    },
+    "core": {
+      "fingerprint": "ba862a03cec564629a91fde9cf7122814c07434e94560f545638294d08d50d44",
+      "paths": [
+        "src/reggraph/core"
+      ],
+      "version": "0.1.0"
+    },
+    "currency": {
+      "fingerprint": "d51df5a89ebb65902147335137d8bcf130793f0b90af338074a11fe36c5fb90c",
+      "paths": [
+        "src/reggraph/currency"
+      ],
+      "version": "0.1.0"
+    },
+    "fx": {
+      "fingerprint": "caf7289a83db4fc5591a3d26e65d0c82edd7e96d4171345b79576dcc367502f4",
+      "paths": [
+        "src/reggraph/fx"
+      ],
+      "version": "0.1.0"
+    },
+    "i18n": {
+      "fingerprint": "61d3515921b646ac8e4d7630f832bf5aec8dc9089e7a25aa451ebc900bb2cb52",
+      "paths": [
+        "src/reggraph/i18n"
+      ],
+      "version": "0.1.0"
+    },
+    "jurisdictions": {
+      "fingerprint": "8b2102d375f98c87f15a296ae9aa085ac49d8d4b5db61229272e74a40ba08134",
+      "paths": [
+        "src/reggraph/jurisdictions"
+      ],
+      "version": "0.1.0"
+    },
+    "regulation": {
+      "fingerprint": "9ecdce43c41d0d1d92c39e36ed3d5e4b15178ddc33c64838bf5c440daedd1cd0",
+      "paths": [
+        "src/reggraph/regulation"
+      ],
+      "version": "0.1.0"
+    },
+    "security": {
+      "fingerprint": "c351169fdc00369a5d3f84a7493595e6102eaeb25b0c8c5cd8699650931456c0",
+      "paths": [
+        "src/reggraph/security"
+      ],
+      "version": "0.1.0"
+    },
+    "storage": {
+      "fingerprint": "d95980c0e699965c13a404782a08b0964d3a499d0e29d4504728ad02aaf0ea8c",
+      "paths": [
+        "src/reggraph/storage"
+      ],
+      "version": "0.1.0"
+    }
+  },
+  "schema": 1
+}

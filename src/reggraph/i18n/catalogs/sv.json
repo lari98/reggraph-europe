@@ -1,0 +1,20 @@
+{
+  "_meta": {
+    "review_status": "machine-draft: needs native-speaker review before release"
+  },
+  "status.ok": "Tjänsten fungerar normalt.",
+  "error.not_found": "Det begärda objektet hittades inte.",
+  "error.forbidden": "Du har inte behörighet att göra detta.",
+  "error.invalid_input": "Inmatningen är inte giltig.",
+  "error.unauthenticated": "Autentisering krävs.",
+  "error.rate_limited": "För många förfrågningar. Försök igen senare.",
+  "error.internal": "Ett internt fel uppstod.",
+  "error.conflict": "Ändringen står i konflikt med aktuellt tillstånd.",
+  "rule.status.draft": "Utkast",
+  "rule.status.approved": "Godkänd",
+  "rule.status.superseded": "Ersatt",
+  "rule.status.withdrawn": "Återkallad",
+  "rule.status.rejected": "Avslagen",
+  "notice.human_approval": "Denna ändring träder i kraft först efter mänskligt godkännande.",
+  "notice.decision_support": "Plattformen stöder beslut; den ersätter inte tillsynsmyndigheter och ger inga juridiskt bindande instruktioner."
+}

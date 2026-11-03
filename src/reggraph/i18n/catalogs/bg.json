@@ -1,0 +1,20 @@
+{
+  "_meta": {
+    "review_status": "machine-draft: needs native-speaker review before release"
+  },
+  "status.ok": "Услугата работи нормално.",
+  "error.not_found": "Исканият елемент не е намерен.",
+  "error.forbidden": "Нямате право да извършите това действие.",
+  "error.invalid_input": "Въведените данни не са валидни.",
+  "error.unauthenticated": "Необходима е автентикация.",
+  "error.rate_limited": "Твърде много заявки. Опитайте отново по-късно.",
+  "error.internal": "Възникна вътрешна грешка.",
+  "error.conflict": "Тази промяна противоречи на текущото състояние.",
+  "rule.status.draft": "Чернова",
+  "rule.status.approved": "Одобрено",
+  "rule.status.superseded": "Заменено",
+  "rule.status.withdrawn": "Оттеглено",
+  "rule.status.rejected": "Отхвърлено",
+  "notice.human_approval": "Тази промяна влиза в сила само след одобрение от човек.",
+  "notice.decision_support": "Платформата подпомага вземането на решения; тя не замества надзорните органи и не дава правнообвързващи указания."
+}

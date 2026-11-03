@@ -1,0 +1,20 @@
+{
+  "_meta": {
+    "review_status": "machine-draft: needs native-speaker review before release"
+  },
+  "status.ok": "Tá an tseirbhís ag feidhmiú go hiondúil.",
+  "error.not_found": "Níor aimsíodh an mhír a iarradh.",
+  "error.forbidden": "Níl cead agat é seo a dhéanamh.",
+  "error.invalid_input": "Níl an t-ionchur bailí.",
+  "error.unauthenticated": "Tá fíordheimhniú riachtanach.",
+  "error.rate_limited": "An iomarca iarratas. Bain triail eile as níos déanaí.",
+  "error.internal": "Tharla earráid inmheánach.",
+  "error.conflict": "Tá an t-athrú seo ag teacht salach ar an staid reatha.",
+  "rule.status.draft": "Dréacht",
+  "rule.status.approved": "Formheasta",
+  "rule.status.superseded": "Curtha in ionad",
+  "rule.status.withdrawn": "Tarraingthe siar",
+  "rule.status.rejected": "Diúltaithe",
+  "notice.human_approval": "Ní thiocfaidh an t-athrú seo i bhfeidhm ach tar éis formheasa ag duine.",
+  "notice.decision_support": "Tacaíonn an ardán le cinnteoireacht; ní ionadaíonn sé na húdaráis mhaoirseachta agus ní thugann sé treoracha atá ceangailteach go dlíthiúil."
+}

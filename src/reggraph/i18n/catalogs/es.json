@@ -1,0 +1,20 @@
+{
+  "_meta": {
+    "review_status": "machine-draft: needs native-speaker review before release"
+  },
+  "status.ok": "El servicio funciona con normalidad.",
+  "error.not_found": "No se encontró el elemento solicitado.",
+  "error.forbidden": "No tiene permiso para hacer esto.",
+  "error.invalid_input": "Los datos introducidos no son válidos.",
+  "error.unauthenticated": "Se requiere autenticación.",
+  "error.rate_limited": "Demasiadas solicitudes. Inténtelo de nuevo más tarde.",
+  "error.internal": "Se produjo un error interno.",
+  "error.conflict": "Este cambio entra en conflicto con el estado actual.",
+  "rule.status.draft": "Borrador",
+  "rule.status.approved": "Aprobado",
+  "rule.status.superseded": "Sustituido",
+  "rule.status.withdrawn": "Retirado",
+  "rule.status.rejected": "Rechazado",
+  "notice.human_approval": "Este cambio solo entra en vigor tras la aprobación de una persona.",
+  "notice.decision_support": "La plataforma apoya la toma de decisiones; no sustituye a las autoridades de supervisión ni da instrucciones jurídicamente vinculantes."
+}

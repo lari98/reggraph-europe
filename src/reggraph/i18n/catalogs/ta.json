@@ -1,0 +1,20 @@
+{
+  "_meta": {
+    "review_status": "machine-draft: needs native-speaker review before release"
+  },
+  "status.ok": "சேவை வழக்கம்போல் செயல்படுகிறது.",
+  "error.not_found": "கோரப்பட்ட உருப்படி கிடைக்கவில்லை.",
+  "error.forbidden": "இதைச் செய்ய உங்களுக்கு அனுமதி இல்லை.",
+  "error.invalid_input": "உள்ளீடு செல்லுபடியாகாது.",
+  "error.unauthenticated": "அங்கீகாரம் தேவை.",
+  "error.rate_limited": "அதிகமான கோரிக்கைகள். பிறகு மீண்டும் முயலவும்.",
+  "error.internal": "உள் பிழை ஏற்பட்டது.",
+  "error.conflict": "இந்த மாற்றம் தற்போதைய நிலையுடன் முரண்படுகிறது.",
+  "rule.status.draft": "வரைவு",
+  "rule.status.approved": "அங்கீகரிக்கப்பட்டது",
+  "rule.status.superseded": "மாற்றப்பட்டது",
+  "rule.status.withdrawn": "திரும்பப் பெறப்பட்டது",
+  "rule.status.rejected": "நிராகரிக்கப்பட்டது",
+  "notice.human_approval": "இந்த மாற்றம் மனித ஒப்புதலுக்குப் பிறகே நடைமுறைக்கு வரும்.",
+  "notice.decision_support": "இந்தத் தளம் முடிவெடுப்பதற்கு உதவுகிறது; இது மேற்பார்வை அமைப்புகளுக்கு மாற்றாகாது, சட்டப்படி கட்டுப்படுத்தும் அறிவுறுத்தல்களையும் வழங்காது."
+}

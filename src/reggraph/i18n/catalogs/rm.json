@@ -1,0 +1,20 @@
+{
+  "_meta": {
+    "review_status": "machine-draft: needs native-speaker review before release"
+  },
+  "status.ok": "Il servetsch funcziunescha normalmain.",
+  "error.not_found": "L'element dumandà n'è betg vegnì chattà.",
+  "error.forbidden": "Vus n'avais nagina permissiun per quai.",
+  "error.invalid_input": "L'endataziun n'è betg valida.",
+  "error.unauthenticated": "Autenticaziun è necessaria.",
+  "error.rate_limited": "Memia blers dumondas. Empruvai danovamain pli tard.",
+  "error.internal": "I è capitada ina errur interna.",
+  "error.conflict": "Questa midada è en conflict cun il stadi actual.",
+  "rule.status.draft": "Concept",
+  "rule.status.approved": "Approvà",
+  "rule.status.superseded": "Remplazzà",
+  "rule.status.withdrawn": "Retratg",
+  "rule.status.rejected": "Refusà",
+  "notice.human_approval": "Questa midada vegn en vigur be suenter l'approvaziun d'in uman.",
+  "notice.decision_support": "La plattafurma sustegna decisiuns; ella na remplazza naginas autoritads da surveglianza e na dat naginas instrucziuns giuridicamain obligatorias."
+}

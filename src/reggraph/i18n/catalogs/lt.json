@@ -1,0 +1,20 @@
+{
+  "_meta": {
+    "review_status": "machine-draft: needs native-speaker review before release"
+  },
+  "status.ok": "Paslauga veikia įprastai.",
+  "error.not_found": "Prašomas elementas nerastas.",
+  "error.forbidden": "Neturite leidimo to daryti.",
+  "error.invalid_input": "Įvesti duomenys netinkami.",
+  "error.unauthenticated": "Reikalingas autentifikavimas.",
+  "error.rate_limited": "Per daug užklausų. Bandykite dar kartą vėliau.",
+  "error.internal": "Įvyko vidinė klaida.",
+  "error.conflict": "Šis pakeitimas prieštarauja dabartinei būsenai.",
+  "rule.status.draft": "Projektas",
+  "rule.status.approved": "Patvirtinta",
+  "rule.status.superseded": "Pakeista",
+  "rule.status.withdrawn": "Atšaukta",
+  "rule.status.rejected": "Atmesta",
+  "notice.human_approval": "Šis pakeitimas įsigalioja tik žmogui jį patvirtinus.",
+  "notice.decision_support": "Platforma padeda priimti sprendimus; ji nepakeičia priežiūros institucijų ir neteikia teisiškai privalomų nurodymų."
+}

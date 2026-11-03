@@ -1,0 +1,20 @@
+{
+  "_meta": {
+    "review_status": "machine-draft: needs native-speaker review before release"
+  },
+  "status.ok": "Perkhidmatan beroperasi seperti biasa.",
+  "error.not_found": "Item yang diminta tidak ditemui.",
+  "error.forbidden": "Anda tidak mempunyai kebenaran untuk melakukan ini.",
+  "error.invalid_input": "Input tidak sah.",
+  "error.unauthenticated": "Pengesahan diperlukan.",
+  "error.rate_limited": "Terlalu banyak permintaan. Sila cuba lagi kemudian.",
+  "error.internal": "Ralat dalaman telah berlaku.",
+  "error.conflict": "Perubahan ini bercanggah dengan keadaan semasa.",
+  "rule.status.draft": "Draf",
+  "rule.status.approved": "Diluluskan",
+  "rule.status.superseded": "Digantikan",
+  "rule.status.withdrawn": "Ditarik balik",
+  "rule.status.rejected": "Ditolak",
+  "notice.human_approval": "Perubahan ini hanya berkuat kuasa selepas kelulusan manusia.",
+  "notice.decision_support": "Platform ini menyokong pembuatan keputusan; ia tidak menggantikan pihak penyelia dan tidak memberikan arahan yang mengikat dari segi undang-undang."
+}
