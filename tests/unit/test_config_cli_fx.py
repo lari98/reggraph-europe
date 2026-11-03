@@ -127,6 +127,13 @@ def test_version_file_matches_package() -> None:
     assert (ROOT / "VERSION").read_text().strip() == __version__
 
 
+def test_pyproject_version_matches_package() -> None:
+    import tomllib
+
+    meta = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    assert meta["project"]["version"] == __version__
+
+
 def test_every_module_is_versioned_and_unchanged() -> None:
     import importlib.util
 
