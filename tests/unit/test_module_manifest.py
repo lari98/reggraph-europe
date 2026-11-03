@@ -82,3 +82,22 @@ def test_next_version(mm: ModuleType, kind: str, expected: str) -> None:
 def test_bump_requires_message_and_known_module(mm: ModuleType) -> None:
     assert mm.bump("alpha", "patch", "  ") == 2
     assert mm.bump("nope", "patch", "x") == 2
+
+
+def test_add_registers_a_new_module_and_logs(
+    mm: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (mm.ROOT / "src/reggraph/gamma").mkdir()
+    (mm.ROOT / "src/reggraph/gamma/g.py").write_text("G = 1\n")
+    monkeypatch.setattr(
+        mm,
+        "MODULES",
+        {**mm.MODULES, "gamma": ("src/reggraph/gamma",)},
+    )
+    assert mm.check() == 1  # listed in MODULES but not yet registered
+    assert mm.add("gamma", "new module") == 0
+    assert mm.load()["modules"]["gamma"]["version"] == "0.1.0"
+    assert "**gamma 0.1.0**" in (mm.ROOT / "CHANGELOG.md").read_text()
+    assert mm.check() == 0
+    assert mm.add("gamma", "again") == 2  # cannot register twice
+    assert mm.add("unknown", "x") == 2

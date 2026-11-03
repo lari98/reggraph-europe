@@ -1,20 +1,20 @@
 {
   "modules": {
     "api": {
-      "fingerprint": "af5e75018fa50abcbcf9c1bc5241ac777354b0645cbbf9bedfbc6c77b7dc36ce",
+      "fingerprint": "fc883226cbce4ca13a36f106e3112ede0dd2c85109ad32546919df28915e538c",
       "paths": [
         "src/reggraph/api"
       ],
-      "version": "0.1.0"
+      "version": "0.2.0"
     },
     "app-shell": {
-      "fingerprint": "ecea3f5726dc3224194f282237073a70094ee71f2589295b3190cec5dc490a15",
+      "fingerprint": "4a17a7c976d35318b639e1d8bcf04ad793eeb0593997e45c1475262472a13df7",
       "paths": [
         "src/reggraph/__init__.py",
         "src/reggraph/config.py",
         "src/reggraph/cli.py"
       ],
-      "version": "0.1.0"
+      "version": "0.2.0"
     },
     "core": {
       "fingerprint": "ba862a03cec564629a91fde9cf7122814c07434e94560f545638294d08d50d44",
@@ -51,6 +51,13 @@
       ],
       "version": "0.1.0"
     },
+    "registry": {
+      "fingerprint": "799da248a0a0e14af0629f2ca53596b12e51fbded5e5adce31aa75b2bb8250b0",
+      "paths": [
+        "src/reggraph/registry"
+      ],
+      "version": "0.1.0"
+    },
     "regulation": {
       "fingerprint": "9ecdce43c41d0d1d92c39e36ed3d5e4b15178ddc33c64838bf5c440daedd1cd0",
       "paths": [
@@ -59,18 +66,18 @@
       "version": "0.1.0"
     },
     "security": {
-      "fingerprint": "c351169fdc00369a5d3f84a7493595e6102eaeb25b0c8c5cd8699650931456c0",
+      "fingerprint": "33fa16d3e1f8e1aeece2a61ad955117f5506fffa3093444412fb5104e8c4721a",
       "paths": [
         "src/reggraph/security"
       ],
-      "version": "0.1.0"
+      "version": "0.2.0"
     },
     "storage": {
-      "fingerprint": "d95980c0e699965c13a404782a08b0964d3a499d0e29d4504728ad02aaf0ea8c",
+      "fingerprint": "ee1f901312b48c3d02627d0d195336bde1b7c60370b9358b945f4cd2bbbb91ac",
       "paths": [
         "src/reggraph/storage"
       ],
-      "version": "0.1.0"
+      "version": "0.2.0"
     }
   },
   "schema": 1

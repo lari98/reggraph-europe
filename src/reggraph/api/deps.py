@@ -13,6 +13,7 @@ from reggraph.core.errors import AuthenticationError
 from reggraph.currency.rates import Converter
 from reggraph.fx import RateBook
 from reggraph.i18n import Translator
+from reggraph.registry import EntityStore
 from reggraph.regulation import RuleStore
 from reggraph.security.audit import AuditLog
 from reggraph.security.ratelimit import RateLimiter
@@ -28,6 +29,7 @@ class Services:
     db: Database
     audit: AuditLog
     rules: RuleStore
+    registry: EntityStore
     ratebook: RateBook
     translator: Translator
     signer: TokenSigner
@@ -47,6 +49,7 @@ def build_services(settings: Settings, clock: Clock | None = None) -> Services:
         db=db,
         audit=audit,
         rules=RuleStore(db, audit, clk),
+        registry=EntityStore(db, audit, clk),
         ratebook=RateBook(db, audit, clk),
         translator=Translator(),
         signer=TokenSigner(settings.token_keys, settings.active_kid, clk),

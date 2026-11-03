@@ -8,7 +8,7 @@
 | Module | `module_versions.json` | independent semantic version per module |
 
 Modules: `core`, `jurisdictions`, `currency`, `i18n`, `security`, `storage`, `regulation`, `fx`,
-`api`, `app-shell`. Each owns specific paths. A **fingerprint** (SHA-256 of file names and
+`registry`, `api`, `app-shell`. Each owns specific paths. A **fingerprint** (SHA-256 of file names and
 contents) is stored beside each version, so any edit, new file or deleted file is noticed.
 
 ## Day-to-day workflow
@@ -35,6 +35,8 @@ line under *Module history*.
 * **Modify** code → edit the file, bump that module.
 * **Delete** code → delete it, bump that module (the fingerprint changes).
 * **Add** a file → it must sit inside a module path; `check` fails for files that belong to no module.
+* **Add a whole new module** → list it in `MODULES` in `tools/module_manifest.py`, then run
+  `python tools/module_manifest.py add <module> -m "why"` (starts at 0.1.0).
 * **Data you must never edit in place:** approved rules (create a new version), audit entries
   and FX rates (insert-only). The database refuses these edits.
 * **Database schema:** add a numbered migration in `storage/sqlite.py`; never edit an old one.

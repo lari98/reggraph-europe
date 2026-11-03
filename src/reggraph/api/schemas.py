@@ -7,6 +7,7 @@ from typing import Annotated
 
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field
 
+from reggraph.registry import EntityInput
 from reggraph.regulation.models import RuleInput
 from reggraph.security.validation import clean_text
 
@@ -47,3 +48,12 @@ class ConvertRequest(_Strict):
     from_currency: str = Field(alias="from", pattern=r"^[A-Za-z]{3}$")
     to: str = Field(pattern=r"^[A-Za-z]{3}$")
     on: date | None = None
+
+
+class EntityUpsertRequest(_Strict):
+    entity: EntityInput
+    change_summary: _Summary
+
+
+class EndLinkRequest(_Strict):
+    effective_until: date

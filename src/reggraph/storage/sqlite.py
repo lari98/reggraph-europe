@@ -89,6 +89,58 @@ _MIGRATIONS: Final[tuple[tuple[int, str], ...]] = (
         INSERT INTO schema_version VALUES (1, datetime('now'));
         """,
     ),
+    (
+        2,
+        """
+        CREATE TABLE entity_versions (
+            tenant_id TEXT NOT NULL,
+            lei TEXT NOT NULL,
+            version_no INTEGER NOT NULL,
+            legal_name TEXT NOT NULL,
+            entity_type TEXT NOT NULL,
+            jurisdiction TEXT NOT NULL,
+            status TEXT NOT NULL CHECK (status IN ('active','dissolved')),
+            payload_json TEXT NOT NULL,
+            content_hash TEXT NOT NULL,
+            change_summary TEXT NOT NULL,
+            changed_by TEXT NOT NULL,
+            changed_at TEXT NOT NULL,
+            PRIMARY KEY (tenant_id, lei, version_no)
+        );
+        CREATE INDEX idx_entity_filter ON entity_versions (tenant_id, jurisdiction, entity_type);
+        CREATE TABLE ownership_links (
+            tenant_id TEXT NOT NULL,
+            link_id INTEGER NOT NULL,
+            parent_lei TEXT NOT NULL,
+            child_lei TEXT NOT NULL,
+            percent TEXT NOT NULL,
+            kind TEXT NOT NULL CHECK (kind IN ('subsidiary','participation','branch')),
+            effective_from TEXT NOT NULL,
+            effective_until TEXT,
+            created_by TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            PRIMARY KEY (tenant_id, link_id),
+            CHECK (parent_lei <> child_lei)
+        );
+        CREATE INDEX idx_own_parent ON ownership_links (tenant_id, parent_lei);
+        CREATE INDEX idx_own_child ON ownership_links (tenant_id, child_lei);
+        CREATE TRIGGER entity_immutable BEFORE UPDATE ON entity_versions
+            BEGIN SELECT RAISE(ABORT, 'entity versions are immutable'); END;
+        CREATE TRIGGER entity_no_delete BEFORE DELETE ON entity_versions
+            BEGIN SELECT RAISE(ABORT, 'entity versions cannot be deleted'); END;
+        CREATE TRIGGER ownership_immutable
+            BEFORE UPDATE OF tenant_id, link_id, parent_lei, child_lei, percent, kind,
+                             effective_from, created_by, created_at
+            ON ownership_links
+            BEGIN SELECT RAISE(ABORT, 'ownership link content is immutable'); END;
+        CREATE TRIGGER ownership_end_once BEFORE UPDATE OF effective_until ON ownership_links
+            WHEN OLD.effective_until IS NOT NULL
+            BEGIN SELECT RAISE(ABORT, 'ownership link already ended'); END;
+        CREATE TRIGGER ownership_no_delete BEFORE DELETE ON ownership_links
+            BEGIN SELECT RAISE(ABORT, 'ownership links cannot be deleted'); END;
+        INSERT INTO schema_version VALUES (2, datetime('now'));
+        """,
+    ),
 )
 
 Params = Sequence[Any]

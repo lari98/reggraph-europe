@@ -14,6 +14,8 @@ Permission matrix (``x`` = granted)::
     tasks:read           -        x             x                x               -
     fx:write             -        -             -                x               -
     audit:read           -        -             -                x               -
+    registry:read        x        x             x                x               -
+    registry:write       -        x             x                x               -
 
 Separation of duties: a tenant admin cannot approve rules, and nobody can approve a version
 they proposed themselves (the four-eyes rule is enforced in ``RuleStore.approve``).
@@ -47,17 +49,19 @@ class Permission(StrEnum):
     TASKS_READ = "tasks:read"
     FX_WRITE = "fx:write"
     AUDIT_READ = "audit:read"
+    REGISTRY_READ = "registry:read"
+    REGISTRY_WRITE = "registry:write"
 
 
 _P = Permission
-_VIEWER = frozenset({_P.REF_READ, _P.FX_CONVERT, _P.RULES_READ})
-_ANALYST = _VIEWER | {_P.RULES_PROPOSE, _P.TASKS_READ}
+_VIEWER = frozenset({_P.REF_READ, _P.FX_CONVERT, _P.RULES_READ, _P.REGISTRY_READ})
+_ANALYST = _VIEWER | {_P.RULES_PROPOSE, _P.TASKS_READ, _P.REGISTRY_WRITE}
 
 ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
     Role.VIEWER: _VIEWER,
     Role.ANALYST: _ANALYST,
     Role.COMPLIANCE_OFFICER: _ANALYST | {_P.RULES_APPROVE, _P.RULES_WITHDRAW},
-    Role.TENANT_ADMIN: _VIEWER | {_P.TASKS_READ, _P.FX_WRITE, _P.AUDIT_READ},
+    Role.TENANT_ADMIN: _VIEWER | {_P.TASKS_READ, _P.FX_WRITE, _P.AUDIT_READ, _P.REGISTRY_WRITE},
     Role.INGESTION_SERVICE: frozenset({_P.RULES_INGEST, _P.RULES_READ}),
 }
 

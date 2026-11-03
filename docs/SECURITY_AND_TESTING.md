@@ -35,9 +35,25 @@ in code, and the test that proves it. Tests live in `tests/security/test_hacking
 | T26 | Weak production configuration | refuses start: short/placeholder key, in-memory DB | `test_settings_refuse_unsafe_values` |
 | T27 | Vulnerable dependencies | `pip-audit` in CI, weekly schedule | `make audit` |
 
+Registry threats (Phase 2) — tests in `tests/security/test_registry_attacks.py` and `tests/unit/test_registry.py`:
+
+| # | Threat | Control | Test |
+|---|---|---|---|
+| T28 | Reading another customer's entities or groups | tenant from token; every query filters tenant; 404 not 403 | `TestRegistryTenantIsolation::test_other_tenant_sees_nothing` |
+| T29 | Linking to or ending another customer's ownership (guessable link ids) | link lookups are tenant-scoped | `test_cannot_link_or_end_across_tenants` |
+| T30 | Missing authentication on any registry route | `require(...)` on all ten routes | `TestRegistryAccess::test_every_registry_route_needs_a_token` |
+| T31 | Viewer or machine feed writing / reading registry | permission matrix | `TestRegistryAccess::test_role_matrix` |
+| T32 | Malformed or hostile identifiers (SQL, traversal, 500-char) | LEI checksum + strict regex, parameterised SQL | `test_hostile_lei_in_path_is_422_or_404_never_500` |
+| T33 | Mass assignment / path-body mismatch | `extra="forbid"`, path LEI must equal body LEI | `test_mass_assignment_and_path_body_mismatch` |
+| T34 | Percentage tricks (NaN, exponent, 9 × 400 digits, >100) | plain-decimal regex, 2 dp, 0 < p ≤ 100 | `test_percentage_abuse` |
+| T35 | Cycle bomb / over-100 % through many small links / very deep chains | cycle check, per-day 100 % check, depth + size caps | `TestGraphAbuse` |
+| T36 | Rewriting entity history or ownership links | DB triggers (immutable, no delete, end-once) | `test_database_refuses_edits_to_history` |
+| T37 | Hidden registry edits | every change audited in the same transaction | `test_audit_covers_registry_changes_and_detects_tampering` |
+
 Property-based tests (`TestProperties`, Hypothesis, 200 examples each) check that
 `clean_text` never returns dangerous characters, `negotiate` always returns a supported tag,
-and `Money` addition / subtraction round-trips.
+and `Money` addition / subtraction round-trips; for the registry, any generated LEI validates in
+any letter case and `validate_lei` never crashes on arbitrary text.
 
 ## Pipeline
 

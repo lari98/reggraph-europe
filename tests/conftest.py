@@ -79,3 +79,22 @@ def auth(token_for: Callable[..., str]) -> Callable[..., dict[str, str]]:
         return {"Authorization": f"Bearer {token_for(user, role, tenant)}"}
 
     return headers
+
+
+def make_lei(seed: str) -> str:
+    """A checksum-valid LEI built from an 18-character body (letters/digits)."""
+    body = (seed.upper() + "0" * 18)[:18]
+    digits = "".join(str(int(ch, 36)) for ch in body + "00")
+    return body + f"{98 - int(digits) % 97:02d}"
+
+
+def entity_payload(lei: str, **over: Any) -> dict[str, Any]:
+    body: dict[str, Any] = {
+        "lei": lei,
+        "legal_name": "Example Bank AG",
+        "entity_type": "bank",
+        "jurisdiction": "DE",
+        "reporting_basis": "individual",
+    }
+    body.update(over)
+    return body

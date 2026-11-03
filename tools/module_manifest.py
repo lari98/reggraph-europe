@@ -11,6 +11,7 @@ Command               What it does
 ====================  ========================================================================
 ``status``            Show every module: version, and whether its files changed since the bump.
 ``check``             Exit 1 if any module changed without a version bump (used by CI).
+``add MODULE``        Register a new module listed in ``MODULES`` at version 0.1.0 (needs ``-m``).
 ``bump MODULE KIND``  Raise one module's version (patch|minor|major), store the new fingerprint
                       and write a line to CHANGELOG.md. Needs ``-m "what changed"``.
 ``init``              Create the manifest from ``MODULES`` (first run only).
@@ -47,6 +48,7 @@ MODULES: Final[dict[str, tuple[str, ...]]] = {
     "storage": ("src/reggraph/storage",),
     "regulation": ("src/reggraph/regulation",),
     "fx": ("src/reggraph/fx",),
+    "registry": ("src/reggraph/registry",),
     "api": ("src/reggraph/api",),
     "app-shell": (
         "src/reggraph/__init__.py",
@@ -150,6 +152,36 @@ def check() -> int:
     return 0
 
 
+def _log(module: str, version: str, kind: str, message: str) -> int:
+    stamp = datetime.now(UTC).strftime("%Y-%m-%d")
+    line = f"- **{module} {version}** ({stamp}, {kind}): {message.strip()}"
+    text = CHANGELOG.read_text(encoding="utf-8")
+    if LOG_MARKER not in text:
+        sys.stderr.write("CHANGELOG.md has no module-log marker\n")
+        return 2
+    CHANGELOG.write_text(text.replace(LOG_MARKER, LOG_MARKER + "\n" + line, 1), encoding="utf-8")
+    return 0
+
+
+def add(module: str, message: str) -> int:
+    data = load()
+    if module in data["modules"]:
+        sys.stderr.write(f"module '{module}' is already registered; use bump\n")
+        return 2
+    if module not in MODULES or not message.strip():
+        sys.stderr.write("module must be listed in MODULES and a message (-m) is required\n")
+        return 2
+    paths = MODULES[module]
+    data["modules"][module] = {
+        "version": "0.1.0",
+        "paths": list(paths),
+        "fingerprint": fingerprint(paths),
+    }
+    save(data)
+    sys.stdout.write(f"{module} added at 0.1.0\n")
+    return _log(module, "0.1.0", "new", message)
+
+
 def _next(version: str, kind: str) -> str:
     match = SEMVER.match(version)
     if not match:
@@ -174,13 +206,8 @@ def bump(module: str, kind: str, message: str) -> int:
     info["version"] = _next(info["version"], kind)
     info["fingerprint"] = fingerprint(tuple(info["paths"]))
     save(data)
-    stamp = datetime.now(UTC).strftime("%Y-%m-%d")
-    line = f"- **{module} {info['version']}** ({stamp}, {kind}): {message.strip()}"
-    text = CHANGELOG.read_text(encoding="utf-8")
-    if LOG_MARKER not in text:
-        sys.stderr.write("CHANGELOG.md has no module-log marker\n")
+    if _log(module, info["version"], kind, message) != 0:
         return 2
-    CHANGELOG.write_text(text.replace(LOG_MARKER, LOG_MARKER + "\n" + line, 1), encoding="utf-8")
     sys.stdout.write(f"{module} -> {info['version']}\n")
     return 0
 
@@ -191,6 +218,9 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("init")
     sub.add_parser("status")
     sub.add_parser("check")
+    a = sub.add_parser("add")
+    a.add_argument("module")
+    a.add_argument("-m", "--message", required=True)
     b = sub.add_parser("bump")
     b.add_argument("module")
     b.add_argument("kind", choices=["patch", "minor", "major"])
@@ -202,6 +232,8 @@ def main(argv: list[str] | None = None) -> int:
         return status()
     if args.cmd == "check":
         return check()
+    if args.cmd == "add":
+        return add(args.module, args.message)
     return bump(args.module, args.kind, args.message)
 
 

@@ -9,6 +9,28 @@ module also has its own version in `module_versions.json`. Format follows
 Newest first. Written automatically by `python tools/module_manifest.py bump ...`.
 
 <!-- module-log -->
+- **app-shell 0.2.0** (2026-11-03, minor): Release 0.2.0 (Phase 2)
+- **api 0.2.0** (2026-11-03, minor): Ten registry routes, entity and end-link request schemas, registry in the service container
+- **storage 0.2.0** (2026-11-03, minor): Migration 2: entity_versions and ownership_links with immutability triggers
+- **security 0.2.0** (2026-11-03, minor): Add registry:read and registry:write permissions to the role matrix
+- **registry 0.1.0** (2026-11-03, new): Phase 2: LEI-keyed entities, licences, ownership links, groups, entity-to-rule mapping
+
+## [0.2.0] - Phase 2: registry
+
+### Added
+- Registry of banks, insurers and corporates keyed by LEI (ISO 17442 checksum verified), with
+  versioned history, licences (type, authority, country, validity) and reporting currency / basis.
+- Ownership links between entities (subsidiary, participation, branch) with periods; refuses
+  cycles, duplicates and more than 100 % held in one child on any day.
+- Indicative control perimeter ("group") on any date with effective percentages, ultimate parent,
+  and entity-to-rule mapping (home country + valid licences, individual / consolidated basis).
+- Permissions `registry:read` and `registry:write`; ten new API routes; migration 2 with
+  database triggers that keep entity history and ownership links immutable.
+- 96 new tests (267 in total) including cross-tenant, id-guessing, cycle-bomb, deep-chain and percentage attacks.
+- `tools/module_manifest.py add` to register a new module.
+
+### Fixed
+- Percentages in ownership links no longer accept exponent notation or JSON floats.
 
 ## [0.1.0] - Phase 1: foundation
 

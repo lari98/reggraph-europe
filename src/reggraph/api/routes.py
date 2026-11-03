@@ -20,6 +20,16 @@ POST    /v1/rules/{key}/withdraw                rules:withdraw       logical del
 GET     /v1/review-tasks                        tasks:read           open review tasks
 GET     /v1/audit                               audit:read           audit entries
 GET     /v1/audit/verify                        audit:read           hash-chain check
+PUT     /v1/entities/{lei}                      registry:write       new entity version
+GET     /v1/entities                            registry:read        list current entities
+GET     /v1/entities/{lei}                      registry:read        current version
+GET     /v1/entities/{lei}/history              registry:read        all versions
+POST    /v1/ownership                           registry:write       add an ownership link
+POST    /v1/ownership/{id}/end                  registry:write       give a link its last day
+GET     /v1/entities/{lei}/ownership            registry:read        owners and holdings on a day
+GET     /v1/entities/{lei}/group                registry:read        controlled group on a day
+GET     /v1/entities/{lei}/ultimate-parent      registry:read        top of the group on a day
+GET     /v1/entities/{lei}/rules                registry:read        rules that apply to it
 ======  ======================================  ===================  =====================
 """
 
@@ -38,7 +48,9 @@ from reggraph.api.deps import Services, get_services, require
 from reggraph.core.errors import ValidationFailure
 from reggraph.currency import CURRENCIES, Money, format_money
 from reggraph.i18n import SUPPORTED_LOCALES
-from reggraph.jurisdictions import all_jurisdictions
+from reggraph.jurisdictions import all_jurisdictions, get_jurisdiction
+from reggraph.registry import OwnershipInput, applicable_rules
+from reggraph.registry.lei import validate_lei
 from reggraph.regulation.models import ConsolidationBasis, EntityType
 from reggraph.security.rbac import Permission, Principal
 
@@ -237,4 +249,151 @@ def audit_verify(
     }
 
 
-__all__ = ["ValidationFailure", "router"]
+# ------------------------------------------------------------------ registry
+@router.put("/v1/entities/{lei}")
+def put_entity(
+    lei: str,
+    body: schemas.EntityUpsertRequest,
+    who: Principal = Depends(require(Permission.REGISTRY_WRITE)),
+    services: Services = Depends(get_services),
+) -> dict[str, Any]:
+    if validate_lei(lei) != body.entity.lei:
+        raise ValidationFailure("LEI in the path and in the body differ")
+    return _dump(services.registry.upsert(who, body.entity, body.change_summary))
+
+
+@router.get("/v1/entities")
+def list_entities(
+    jurisdiction: str | None = Query(default=None, max_length=8),
+    entity_type: EntityType | None = Query(default=None),
+    status: str | None = Query(default=None, pattern="^(active|dissolved)$"),
+    limit: int = Query(default=50, ge=1, le=200),
+    after: str = Query(default="", max_length=20),
+    who: Principal = Depends(require(Permission.REGISTRY_READ)),
+    services: Services = Depends(get_services),
+) -> list[dict[str, Any]]:
+    code = None
+    if jurisdiction is not None:
+        jur = get_jurisdiction(jurisdiction.upper())
+        if jur is None:
+            raise ValidationFailure("unknown jurisdiction")
+        code = jur.code
+    found = services.registry.list_entities(
+        who,
+        jurisdiction=code,
+        entity_type=entity_type.value if entity_type else None,
+        status=status,
+        limit=limit,
+        after=after.upper(),
+    )
+    return [_dump(v) for v in found]
+
+
+@router.get("/v1/entities/{lei}")
+def get_entity(
+    lei: str,
+    who: Principal = Depends(require(Permission.REGISTRY_READ)),
+    services: Services = Depends(get_services),
+) -> dict[str, Any]:
+    return _dump(services.registry.get(who, lei))
+
+
+@router.get("/v1/entities/{lei}/history")
+def entity_history(
+    lei: str,
+    who: Principal = Depends(require(Permission.REGISTRY_READ)),
+    services: Services = Depends(get_services),
+) -> list[dict[str, Any]]:
+    return [_dump(v) for v in services.registry.history(who, lei)]
+
+
+@router.post("/v1/ownership", status_code=201)
+def add_ownership(
+    body: OwnershipInput,
+    who: Principal = Depends(require(Permission.REGISTRY_WRITE)),
+    services: Services = Depends(get_services),
+) -> dict[str, Any]:
+    return _dump(services.registry.link(who, body))
+
+
+@router.post("/v1/ownership/{link_id}/end")
+def end_ownership(
+    link_id: int,
+    body: schemas.EndLinkRequest,
+    who: Principal = Depends(require(Permission.REGISTRY_WRITE)),
+    services: Services = Depends(get_services),
+) -> dict[str, Any]:
+    return _dump(services.registry.end_link(who, link_id, body.effective_until))
+
+
+@router.get("/v1/entities/{lei}/ownership")
+def entity_ownership(
+    lei: str,
+    on: date | None = Query(default=None),
+    who: Principal = Depends(require(Permission.REGISTRY_READ)),
+    services: Services = Depends(get_services),
+) -> dict[str, list[dict[str, Any]]]:
+    day = on or services.clock.now().date()
+    found = services.registry.links_of(who, lei, day)
+    return {side: [_dump(item) for item in items] for side, items in found.items()}
+
+
+@router.get("/v1/entities/{lei}/group")
+def entity_group(
+    lei: str,
+    on: date | None = Query(default=None),
+    who: Principal = Depends(require(Permission.REGISTRY_READ)),
+    services: Services = Depends(get_services),
+) -> dict[str, Any]:
+    day = on or services.clock.now().date()
+    view = services.registry.group(who, lei, day)
+    return {
+        "root": view.root,
+        "as_of": day.isoformat(),
+        "note": "indicative control perimeter (more than 50 percent or branch); "
+        "confirm against the applicable consolidation rules",
+        "members": [
+            {
+                "lei": m.lei,
+                "depth": m.depth,
+                "via": m.via,
+                "direct_percent": str(m.direct_percent),
+                "effective_percent": str(m.effective_percent),
+            }
+            for m in view.members
+        ],
+        "participations": [
+            {"holder": p.holder, "held": p.held, "percent": str(p.percent)}
+            for p in view.participations
+        ],
+    }
+
+
+@router.get("/v1/entities/{lei}/ultimate-parent")
+def entity_ultimate_parent(
+    lei: str,
+    on: date | None = Query(default=None),
+    who: Principal = Depends(require(Permission.REGISTRY_READ)),
+    services: Services = Depends(get_services),
+) -> dict[str, Any]:
+    day = on or services.clock.now().date()
+    return _dump(services.registry.ultimate_parent(who, lei, day))
+
+
+@router.get("/v1/entities/{lei}/rules")
+def entity_rules(
+    lei: str,
+    on: date | None = Query(default=None),
+    who: Principal = Depends(require(Permission.REGISTRY_READ)),
+    services: Services = Depends(get_services),
+) -> list[dict[str, Any]]:
+    day = on or services.clock.now().date()
+    matches = applicable_rules(who, services.registry, services.rules, lei, day)
+    return [
+        {
+            "in_transition": m.in_transition,
+            "because_of": {"jurisdictions": m.jurisdictions, "bases": m.bases},
+            "version": _dump(m.version),
+        }
+        for m in matches
+    ]

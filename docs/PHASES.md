@@ -6,7 +6,7 @@ hardening phase. A phase is *done* only when its exit gate passes.
 | Phase | Name | Pitch Pack module / MVP stage | Main deliverables | Exit gate |
 |---|---|---|---|---|
 | **1 ✅** | Foundation | Regulatory Intelligence (core) · Stage 1 | Jurisdictions, currency, 34 locales, rule store, security core, API, tests, tooling | `make check` green; ≥ 90 % coverage; attacker tests pass |
-| 2 | Registry | Bank & Corporate Registry · Stage 1 | Entity model (LEI-keyed), group structures, licences, consolidation basis, entity ↔ rule mapping | Entity data validated; tenant isolation tests extended |
+| **2 ✅** | Registry | Bank & Corporate Registry · Stage 1 | LEI-keyed entities, licences, ownership and group structures, consolidation basis, entity ↔ rule mapping ([REGISTRY.md](REGISTRY.md)) | Entity data validated (LEI checksum, cycles, 100 % rule); tenant isolation attacks pass |
 | 3 | Connectivity & graph | Insurance Connectivity, Financial Exposure Graph · Stage 2 | Insurer ↔ bank/corporate relationships, exposure edges, concentration views | Graph queries reproducible; data lineage recorded |
 | 4 | Stress lab | Stress Testing Laboratory · Stage 3 | Scenario engine, recovery measures, reproducible runs, PostgreSQL storage | Same inputs → same outputs; results signed and versioned |
 | 5 | Dashboard & integrations | Management Dashboard · Stage 4 | Role-based views, secure connectors (EUR-Lex, ECB rates), SSO / OIDC | Connector sandbox review; no secrets in logs |
@@ -21,7 +21,7 @@ hardening phase. A phase is *done* only when its exit gate passes.
 4. New text uses translation keys, not string literals; new money uses `Money`, never `float`.
 5. Architecture decisions are added to the table in [ARCHITECTURE.md](ARCHITECTURE.md).
 
-## What Phase 1 deliberately leaves out
+## What the delivered phases deliberately leave out
 
-Registry, exposure graph, stress testing, dashboard, live data feeds and PostgreSQL. They are
-scheduled above; nothing in Phase 1 pretends to provide them.
+Registry (delivered in Phase 2), exposure graph, stress testing, dashboard, live data feeds and
+PostgreSQL. They are scheduled above; nothing delivered so far pretends to provide them.

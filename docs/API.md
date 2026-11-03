@@ -28,6 +28,19 @@ development `reggraph issue-token`). **Language:** send `Accept-Language`; the r
 | GET | `/v1/review-tasks` | `tasks:read` | open review tasks |
 | GET | `/v1/audit` | `audit:read` | audit entries (`limit` ≤ 500, `after`) |
 | GET | `/v1/audit/verify` | `audit:read` | hash-chain check + current head |
+| PUT | `/v1/entities/{lei}` | `registry:write` | create or update an entity (new version) |
+| GET | `/v1/entities` | `registry:read` | current entities; filters `jurisdiction`, `entity_type`, `status`; cursor `after`, `limit` ≤ 200 |
+| GET | `/v1/entities/{lei}` | `registry:read` | current version |
+| GET | `/v1/entities/{lei}/history` | `registry:read` | all versions |
+| POST | `/v1/ownership` | `registry:write` | add an ownership link |
+| POST | `/v1/ownership/{id}/end` | `registry:write` | give an open link its last day |
+| GET | `/v1/entities/{lei}/ownership` | `registry:read` | owners and holdings on `on` |
+| GET | `/v1/entities/{lei}/group` | `registry:read` | controlled group on `on` (indicative) |
+| GET | `/v1/entities/{lei}/ultimate-parent` | `registry:read` | top of the group on `on` |
+| GET | `/v1/entities/{lei}/rules` | `registry:read` + `rules:read` | rules that apply to the entity on `on` |
+
+Registry details, date rules and examples: [REGISTRY.md](REGISTRY.md). `{lei}` is checked for
+format and check digits (422 if wrong); the LEI in the path and the body of a `PUT` must match.
 
 Roles → permissions are tabulated in `src/reggraph/security/rbac.py`.
 
@@ -68,7 +81,7 @@ Always `{"code", "message", "request_id"}`; `message` is in the caller's languag
 | 401 | `unauthenticated` | missing, invalid or expired token (`WWW-Authenticate: Bearer`) |
 | 403 | `forbidden` | role lacks permission, or you tried to approve your own proposal |
 | 404 | `not_found` | unknown rule/version — or it belongs to another tenant |
-| 409 | `conflict` | an open draft exists, or the version was already decided |
+| 409 | `conflict` | open draft exists / version already decided / identical entity / ownership cycle, duplicate or over 100 % |
 | 413 | `payload_too_large` | body over the configured limit (default 256 KiB) |
 | 422 | `invalid_input` | validation failed; `problems` lists `loc` and `type` only |
 | 429 | `rate_limited` | slow down; see `Retry-After` |
