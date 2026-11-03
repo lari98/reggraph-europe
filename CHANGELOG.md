@@ -9,6 +9,11 @@ module also has its own version in `module_versions.json`. Format follows
 Newest first. Written automatically by `python tools/module_manifest.py bump ...`.
 
 <!-- module-log -->
+- **app-shell 0.5.1** (2026-11-03, patch): Release 0.5.1: offline setting, reggraph demo, loopback-only serving, low-energy server options
+- **api 0.6.0** (2026-11-03, minor): Dashboard offline flag, notice, icon route; img-src self; create_app accepts prebuilt services
+- **dashboard 0.2.0** (2026-11-03, minor): Colourful SVG dashboard, KPI cards, icon, fragment-token sign-in
+- **connectors 0.1.1** (2026-11-03, patch): Connector runs refused in offline mode
+- **netio 0.1.1** (2026-11-03, patch): OfflineFetcher: refuses every request (travel mode)
 - **app-shell 0.5.0** (2026-11-03, minor): Release 0.5.0 (Phase 5): connector, OIDC and local-token settings
 - **api 0.5.0** (2026-11-03, minor): Dashboard page and API, connector and alert routes, CSP for the page, SSO routing in get_principal
 - **storage 0.5.0** (2026-11-03, minor): Migration 5: connector_runs and source_alerts with immutability triggers
@@ -42,6 +47,21 @@ Newest first. Written automatically by `python tools/module_manifest.py bump ...
 - **storage 0.2.0** (2026-11-03, minor): Migration 2: entity_versions and ownership_links with immutability triggers
 - **security 0.2.0** (2026-11-03, minor): Add registry:read and registry:write permissions to the role matrix
 - **registry 0.1.0** (2026-11-03, new): Phase 2: LEI-keyed entities, licences, ownership links, groups, entity-to-rule mapping
+
+## [0.5.1] - Offline mode, demo and dashboard redesign
+
+### Added
+
+1. `REGGRAPH_OFFLINE` travel mode: connectors refused, SSO rejected, loopback-only serving.
+2. `reggraph demo`: in-memory invented data, short-lived token in the URL fragment, `--open` for Chrome.
+3. Colourful dashboard: gradient header, KPI cards, SVG donuts and bars, breach badges, light/dark, print.
+4. Browser tests (`tests/ui`): WCAG AA contrast of every colour pair, fonts, shapes, five viewports,
+   no console/CSP errors, no external requests, token removed from the address bar.
+5. `docs/DEPLOYMENT.md`.
+
+### Fixed
+
+1. Dashboard files were missing from the package data, so a non-editable install had no page.
 
 ## [0.5.0] - Phase 5: dashboard, connectors and single sign-on
 

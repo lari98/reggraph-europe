@@ -17,6 +17,7 @@ REGGRAPH_OIDC_AUDIENCE      (empty)       audience this API expects in access to
 REGGRAPH_OIDC_JWKS_URL      (empty)       https URL of the provider's public key set
 REGGRAPH_OIDC_TENANT_CLAIM  reggraph_tenant   claim that carries the tenant id
 REGGRAPH_OIDC_ROLES_CLAIM   reggraph_roles    claim that carries the role names (a list)
+REGGRAPH_OFFLINE            false         travel mode: no outbound calls, loopback only, no SSO
 REGGRAPH_ALLOW_LOCAL_TOKENS true          accept RegGraph's own tokens (turn off once SSO is live)
 
 In ``prod`` the service refuses to start with a missing, short or placeholder key, an in-memory
@@ -75,6 +76,7 @@ class Settings:
     oidc_tenant_claim: str = "reggraph_tenant"
     oidc_roles_claim: str = "reggraph_roles"
     allow_local_tokens: bool = True
+    offline: bool = False
 
     def __post_init__(self) -> None:
         if self.env not in {"dev", "test", "prod"}:
@@ -96,6 +98,8 @@ class Settings:
         if not 1024 <= self.max_body_bytes <= 10 * 1024 * 1024:
             raise ValidationFailure("max body size out of range")
 
+        if self.offline and (self.oidc_issuer or not self.allow_local_tokens):
+            raise ValidationFailure("offline mode uses local tokens only (no SSO)")
         self._check_connectors()
         self._check_oidc()
 
@@ -190,4 +194,5 @@ class Settings:
             oidc_roles_claim=env.get("REGGRAPH_OIDC_ROLES_CLAIM", "reggraph_roles"),
             allow_local_tokens=env.get("REGGRAPH_ALLOW_LOCAL_TOKENS", "true").lower()
             not in {"0", "false", "no", "off"},
+            offline=env.get("REGGRAPH_OFFLINE", "false").lower() in {"1", "true", "yes", "on"},
         )

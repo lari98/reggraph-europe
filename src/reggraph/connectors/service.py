@@ -95,7 +95,9 @@ class ConnectorService:
         ecb_url: str,
         eurlex_url: str,
         min_interval: timedelta = MIN_INTERVAL,
+        offline: bool = False,
     ) -> None:
+        self._offline = offline
         self._db, self._audit, self._clock = db, audit, clock
         self._rates, self._fetcher = ratebook, fetcher
         self._urls = {"ecb_rates": ecb_url, "eurlex_watch": eurlex_url}
@@ -108,6 +110,8 @@ class ConnectorService:
     # ------------------------------------------------------------------ running
     def run(self, who: Principal, connector: str) -> RunRecord:
         who.require(Permission.CONNECTORS_RUN)
+        if self._offline:
+            raise ValidationFailure("offline mode: connectors are switched off")
         runner = self._runners.get(connector)
         if runner is None:
             raise NotFoundError("unknown connector")

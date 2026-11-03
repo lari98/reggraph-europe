@@ -3,6 +3,7 @@
 from reggraph.netio.fetch import (
     Fetcher,
     FetchResult,
+    OfflineFetcher,
     SafeFetcher,
     UpstreamError,
     https_transport,
@@ -12,6 +13,7 @@ from reggraph.netio.fetch import (
 __all__ = [
     "FetchResult",
     "Fetcher",
+    "OfflineFetcher",
     "SafeFetcher",
     "UpstreamError",
     "https_transport",

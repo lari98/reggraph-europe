@@ -25,9 +25,10 @@ def create_app(
     *,
     connector_fetcher: Fetcher | None = None,
     oidc_fetcher: Fetcher | None = None,
+    services: Services | None = None,
 ) -> FastAPI:
     cfg = settings or Settings.from_env()
-    services: Services = build_services(
+    services = services or build_services(
         cfg, clock, connector_fetcher=connector_fetcher, oidc_fetcher=oidc_fetcher
     )
     app = FastAPI(

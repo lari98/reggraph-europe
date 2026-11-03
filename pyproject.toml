@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "reggraph-europe"
-version = "0.5.0"
+version = "0.5.1"
 description = "RegGraph Europe - EU-Swiss financial resilience and regulatory intelligence platform (decision support)"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -40,6 +40,7 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 "reggraph.i18n" = ["catalogs/*.json"]
+"reggraph.dashboard" = ["static/*"]
 
 # ----------------------------------------------------------------- quality gates
 [tool.pytest.ini_options]

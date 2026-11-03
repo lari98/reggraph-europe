@@ -1,20 +1,20 @@
 {
   "modules": {
     "api": {
-      "fingerprint": "a1de764bd92157ef03964afcf319fabee0ac652f0114c8b1850cf8f4530dec44",
+      "fingerprint": "e0395a87b01bdf6a25b29bc388a6ace10147a5b4b8e2b3d63bd6e0f32ce78611",
       "paths": [
         "src/reggraph/api"
       ],
-      "version": "0.5.0"
+      "version": "0.6.0"
     },
     "app-shell": {
-      "fingerprint": "c2e4bc2c35809778766b1eeb18b2e622c59259c4701298701de9a34c36324992",
+      "fingerprint": "f8c51dfabb32fe686da57f1345e426dfdf2e630f61ca9bbd591d061ffad3d4ea",
       "paths": [
         "src/reggraph/__init__.py",
         "src/reggraph/config.py",
         "src/reggraph/cli.py"
       ],
-      "version": "0.5.0"
+      "version": "0.5.1"
     },
     "connectivity": {
       "fingerprint": "18b41274f4f6ac93a99944d0de6578ac2868023fed5d402ecb8decad0326e916",
@@ -24,11 +24,11 @@
       "version": "0.1.0"
     },
     "connectors": {
-      "fingerprint": "9f97bf6f866e860f2664630dbad6324a9fe488e9e61444ec69edd063c5e7fade",
+      "fingerprint": "ae9cd243c38e007a40c2a177cc476cb3fd20b86edcc0182af3e69e405ae78060",
       "paths": [
         "src/reggraph/connectors"
       ],
-      "version": "0.1.0"
+      "version": "0.1.1"
     },
     "core": {
       "fingerprint": "985ac1bd9172b939311d5dbddab2b7eddc7cd630a07d0f851869a60924a80e10",
@@ -45,11 +45,11 @@
       "version": "0.2.0"
     },
     "dashboard": {
-      "fingerprint": "d805540582da2ed74ee1cf23de20942b244980711a608e4e5b4b5f1766107293",
+      "fingerprint": "3724a51a678e6b76ebf7fd6a9a4e59a865d3ad9305fe39fa2a80d15fb8646d7c",
       "paths": [
         "src/reggraph/dashboard"
       ],
-      "version": "0.1.0"
+      "version": "0.2.0"
     },
     "exposure": {
       "fingerprint": "4c270759f2dde8b134913cf73d14983c96381b867370266b5ef30e7dca315ce3",
@@ -87,11 +87,11 @@
       "version": "0.1.0"
     },
     "netio": {
-      "fingerprint": "d0fd38c91b2903f10d4bbe4f6242758af207940550abc9198fa3a615b9651cf1",
+      "fingerprint": "28802058795d55b25a9d8e26b4839719835a2cbba18e2903398596f15724a8bf",
       "paths": [
         "src/reggraph/netio"
       ],
-      "version": "0.1.0"
+      "version": "0.1.1"
     },
     "registry": {
       "fingerprint": "f1fb524c49491820b6c35f54da9cf5c0961eeaa21da642bd4bf9e8a045d38a1a",

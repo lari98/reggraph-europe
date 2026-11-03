@@ -19,7 +19,7 @@ from reggraph.exposure import ExposureAnalysis, ExposureStore
 from reggraph.fx import RateBook
 from reggraph.i18n import Translator
 from reggraph.insurance import ContractStore
-from reggraph.netio import Fetcher, SafeFetcher
+from reggraph.netio import Fetcher, OfflineFetcher, SafeFetcher
 from reggraph.registry import EntityStore
 from reggraph.regulation import RuleStore
 from reggraph.security.audit import AuditLog
@@ -91,7 +91,7 @@ def build_services(
         converter_for,
     )
     oidc: OidcVerifier | None = None
-    if settings.oidc_enabled:
+    if settings.oidc_enabled and not settings.offline:
         oidc = OidcVerifier(
             issuer=settings.oidc_issuer,
             audience=settings.oidc_audience,
@@ -106,9 +106,12 @@ def build_services(
         audit,
         clk,
         ratebook,
-        connector_fetcher or SafeFetcher(settings.connector_hosts),
+        OfflineFetcher()
+        if settings.offline
+        else connector_fetcher or SafeFetcher(settings.connector_hosts),
         ecb_url=settings.ecb_rates_url,
         eurlex_url=settings.eurlex_feed_url,
+        offline=settings.offline,
     )
     return Services(
         settings=settings,

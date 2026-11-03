@@ -712,6 +712,7 @@ _PAGE_FILES = {
     "/dashboard": ("index.html", "text/html; charset=utf-8"),
     "/dashboard/app.js": ("app.js", "text/javascript; charset=utf-8"),
     "/dashboard/app.css": ("app.css", "text/css; charset=utf-8"),
+    "/dashboard/icon.svg": ("icon.svg", "image/svg+xml"),
 }
 _PAGES = {
     path: (STATIC_DIR.joinpath(name).read_bytes(), media)
@@ -752,6 +753,11 @@ def dashboard_style() -> Response:
     return _page("/dashboard/app.css")
 
 
+@router.get("/dashboard/icon.svg", include_in_schema=False)
+def dashboard_icon() -> Response:
+    return _page("/dashboard/icon.svg")
+
+
 @router.get("/v1/dashboard")
 def dashboard(
     request: Request,
@@ -763,10 +769,14 @@ def dashboard(
     day = as_of or services.clock.now().date()
     data = services.dashboard.build(who, day, currency.upper())
     locale = request.state.locale
+    data["offline"] = services.settings.offline
     data["labels"] = {
         f"dashboard.{k}": services.translator.translate(f"dashboard.{k}", locale)
         for k in _LABEL_KEYS
     }
+    data["labels"]["notice.decision_support"] = services.translator.translate(
+        "notice.decision_support", locale
+    )
     return data
 
 

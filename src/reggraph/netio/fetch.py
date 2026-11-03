@@ -173,6 +173,13 @@ def https_transport(
         conn.close()
 
 
+class OfflineFetcher:
+    """Used in offline (travel) mode: there is no code path that can reach the network."""
+
+    def get(self, url: str, accept: Collection[str]) -> FetchResult:
+        raise UpstreamError("offline mode: outbound access is switched off")
+
+
 class SafeFetcher:
     def __init__(
         self,

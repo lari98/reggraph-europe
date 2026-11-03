@@ -85,6 +85,12 @@ Registry threats (Phase 2) — tests in `tests/security/test_registry_attacks.py
 | T71 | Tokens, passwords or DSNs in logs, including tracebacks | record-time masking | `test_no_secrets_reach_the_logs`, `test_secrets_are_masked` |
 | T72 | Unsafe configuration (partial SSO, http URLs, IP-literal or wildcard hosts, local tokens off without SSO) | validated at start-up | `test_unsafe_settings_do_not_start` |
 | T73 | Rewriting connector history or alert content | DB triggers (both back ends) | `test_history_cannot_be_rewritten` |
+| T74 | Network call while travelling (offline mode) | `OfflineFetcher`, connectors refuse to run | `test_connectors_are_switched_off_and_never_touch_the_network` |
+| T75 | Demo server reachable from other machines | loopback-only check in `serve`/`demo` | `test_demo_refuses_a_public_address`, `test_serve_refuses_a_public_address_in_offline_mode` |
+| T76 | SSO or key-set fetch while offline | start-up validation | `test_offline_mode_rejects_sso_configuration` |
+| T77 | Token leaking from the demo link | URL fragment, removed by the page, never stored | `test_page_renders_cleanly` (hash empty) |
+| T78 | Markup injected through the link fragment | strict pattern, `textContent` only | `test_no_page_script_can_be_injected` |
+| T79 | Unreadable colours / third-party fonts | AA contrast tests, system fonts, CSP `img-src 'self'` | `test_text_colour_pairs_meet_wcag_aa`, `test_fonts_and_shapes` |
 
 Property-based tests (`TestProperties`, Hypothesis, 200 examples each) check that
 `clean_text` never returns dangerous characters, `negotiate` always returns a supported tag,

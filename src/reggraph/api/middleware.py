@@ -32,9 +32,14 @@ log = logging.getLogger("reggraph.api")
 
 _REQUEST_ID_RE: Final = re.compile(r"^[A-Za-z0-9-]{8,64}$")
 _DOCS_PATHS: Final = ("/docs", "/openapi.json")
-_PAGE_PATHS: Final = ("/dashboard", "/dashboard/app.js", "/dashboard/app.css")
+_PAGE_PATHS: Final = (
+    "/dashboard",
+    "/dashboard/app.js",
+    "/dashboard/app.css",
+    "/dashboard/icon.svg",
+)
 PAGE_CSP: Final = (
-    "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; "
+    "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self'; "
     "base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
 )  # no inline script or style, no third parties: the dashboard page loads only its own files
 

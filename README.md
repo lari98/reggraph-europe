@@ -4,7 +4,7 @@
 change, cross-border exposure and resilience across the EU-27, Switzerland, the United
 Kingdom, the United States and Singapore.
 
-> **Status: Phase 5 of 7 complete (foundation, registry, exposure, insurance, stress lab, PostgreSQL, dashboard, connectors, SSO), release 0.5.0.**
+> **Status: Phase 5 of 7 complete (foundation, registry, exposure, insurance, stress lab, PostgreSQL, dashboard, connectors, SSO), release 0.5.1 (offline mode, demo, redesigned dashboard).**
 > This repository implements the platform core described in the *RegGraph Europe – Pitch Pack*:
 > the regulatory-intelligence engine, the bank and corporate registry, insurance connectivity,
 > the financial exposure graph, the stress testing laboratory, the security model, multi-language
@@ -48,6 +48,14 @@ TOKEN=$(reggraph issue-token --tenant acme --user ana --role analyst)
 curl -H "Authorization: Bearer $TOKEN" -H "Accept-Language: de" http://127.0.0.1:8000/v1/rules
 ```
 
+See the dashboard with invented data, offline and on `127.0.0.1` only (safe on a train or plane):
+
+```bash
+reggraph demo --open
+```
+
+Details, offline guarantees and server deployment: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+
 Run every quality gate: `make check` (and `make audit` for the dependency scan).
 
 ## Repository map
@@ -82,6 +90,7 @@ docs/                         architecture, standards, security, i18n, versionin
 | [docs/I18N_AND_CURRENCY.md](docs/I18N_AND_CURRENCY.md) | add a language or currency |
 | [docs/VERSIONING.md](docs/VERSIONING.md) | change one module without touching the rest |
 | [docs/API.md](docs/API.md) | call the HTTP API |
+| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | run the demo, use offline mode, deploy to a server |
 | [docs/ORIGINALITY_AND_REFERENCES.md](docs/ORIGINALITY_AND_REFERENCES.md) | see what is original and what was consulted |
 
 ## Known limits (be upfront with customers)

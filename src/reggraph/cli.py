@@ -17,6 +17,13 @@ def main(argv: list[str] | None = None) -> int:
     serve = sub.add_parser("serve", help="run the API")
     serve.add_argument("--host", default="127.0.0.1")
     serve.add_argument("--port", type=int, default=8000)
+    demo = sub.add_parser("demo", help="offline showcase with invented data (loopback only)")
+    demo.add_argument("--host", default="127.0.0.1")
+    demo.add_argument("--port", type=int, default=8000)
+    demo.add_argument(
+        "--role", default="admin", choices=["admin", "analyst", "compliance", "viewer"]
+    )
+    demo.add_argument("--open", action="store_true", help="open the page in the default browser")
     tok = sub.add_parser("issue-token", help="mint a short-lived token (not allowed in prod)")
     tok.add_argument("--tenant", required=True)
     tok.add_argument("--user", required=True)
@@ -24,13 +31,28 @@ def main(argv: list[str] | None = None) -> int:
     tok.add_argument("--ttl", type=int, default=900)
     args = parser.parse_args(argv)
 
+    if args.command == "demo":
+        from reggraph.demo import run_demo
+
+        return run_demo(args.host, args.port, args.role, args.open)
+
     settings = Settings.from_env()
     if args.command == "serve":
+        if settings.offline and args.host not in {"127.0.0.1", "::1", "localhost"}:
+            sys.stderr.write("refused: offline mode only listens on the loopback address\n")
+            return 2
         import uvicorn
 
         from reggraph.api import create_app
 
-        uvicorn.run(create_app(settings), host=args.host, port=args.port, server_header=False)
+        uvicorn.run(
+            create_app(settings),
+            host=args.host,
+            port=args.port,
+            server_header=False,
+            access_log=not settings.offline,
+            log_level="warning" if settings.offline else "info",
+        )
         return 0
 
     if settings.env == "prod":
