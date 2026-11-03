@@ -16,5 +16,16 @@
   "rule.status.withdrawn": "Staženo",
   "rule.status.rejected": "Zamítnuto",
   "notice.human_approval": "Tato změna nabude účinnosti až po schválení člověkem.",
-  "notice.decision_support": "Platforma podporuje rozhodování; nenahrazuje orgány dohledu ani nedává právně závazné pokyny."
+  "notice.decision_support": "Platforma podporuje rozhodování; nenahrazuje orgány dohledu ani nedává právně závazné pokyny.",
+  "dashboard.title": "Řídicí panel",
+  "dashboard.token": "Přístupový token",
+  "dashboard.load": "Načíst",
+  "dashboard.registry": "Registr",
+  "dashboard.exposure": "Expozice",
+  "dashboard.insurance": "Pojištění",
+  "dashboard.stress": "Zátěžové testy",
+  "dashboard.rules": "Pravidla",
+  "dashboard.rates": "Směnné kurzy",
+  "dashboard.connectors": "Konektory",
+  "dashboard.unavailable": "Pro vaši roli není k dispozici."
 }

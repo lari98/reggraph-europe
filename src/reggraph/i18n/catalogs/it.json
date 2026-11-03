@@ -16,5 +16,16 @@
   "rule.status.withdrawn": "Ritirato",
   "rule.status.rejected": "Respinto",
   "notice.human_approval": "Questa modifica entra in vigore solo dopo l'approvazione umana.",
-  "notice.decision_support": "La piattaforma supporta le decisioni; non sostituisce le autorità di vigilanza né fornisce istruzioni giuridicamente vincolanti."
+  "notice.decision_support": "La piattaforma supporta le decisioni; non sostituisce le autorità di vigilanza né fornisce istruzioni giuridicamente vincolanti.",
+  "dashboard.title": "Cruscotto di gestione",
+  "dashboard.token": "Token di accesso",
+  "dashboard.load": "Carica",
+  "dashboard.registry": "Registro",
+  "dashboard.exposure": "Esposizioni",
+  "dashboard.insurance": "Assicurazioni",
+  "dashboard.stress": "Stress test",
+  "dashboard.rules": "Regole",
+  "dashboard.rates": "Tassi di cambio",
+  "dashboard.connectors": "Connettori",
+  "dashboard.unavailable": "Non disponibile per il tuo ruolo."
 }

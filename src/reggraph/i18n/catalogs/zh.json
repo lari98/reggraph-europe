@@ -16,5 +16,16 @@
   "rule.status.withdrawn": "已撤回",
   "rule.status.rejected": "已拒绝",
   "notice.human_approval": "此更改须经人工批准后方可生效。",
-  "notice.decision_support": "本平台仅辅助决策，不取代监管机构，也不提供具有法律约束力的指示。"
+  "notice.decision_support": "本平台仅辅助决策，不取代监管机构，也不提供具有法律约束力的指示。",
+  "dashboard.title": "管理仪表板",
+  "dashboard.token": "访问令牌",
+  "dashboard.load": "加载",
+  "dashboard.registry": "登记册",
+  "dashboard.exposure": "风险敞口",
+  "dashboard.insurance": "保险",
+  "dashboard.stress": "压力测试",
+  "dashboard.rules": "规则",
+  "dashboard.rates": "汇率",
+  "dashboard.connectors": "连接器",
+  "dashboard.unavailable": "您的角色无权查看。"
 }

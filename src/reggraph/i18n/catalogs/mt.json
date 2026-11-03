@@ -16,5 +16,16 @@
   "rule.status.withdrawn": "Irtirat",
   "rule.status.rejected": "Miċħud",
   "notice.human_approval": "Dan il-bidla tidħol fis-seħħ biss wara approvazzjoni minn bniedem.",
-  "notice.decision_support": "Il-pjattaforma tappoġġa d-deċiżjonijiet; ma tissostitwix lill-awtoritajiet superviżorji u ma tagħtix struzzjonijiet legalment vinkolanti."
+  "notice.decision_support": "Il-pjattaforma tappoġġa d-deċiżjonijiet; ma tissostitwix lill-awtoritajiet superviżorji u ma tagħtix struzzjonijiet legalment vinkolanti.",
+  "dashboard.title": "Dashboard tal-ġestjoni",
+  "dashboard.token": "Token tal-aċċess",
+  "dashboard.load": "Tgħabbi",
+  "dashboard.registry": "Reġistru",
+  "dashboard.exposure": "Esposizzjonijiet",
+  "dashboard.insurance": "Assigurazzjoni",
+  "dashboard.stress": "Testijiet tal-istress",
+  "dashboard.rules": "Regoli",
+  "dashboard.rates": "Rati tal-kambju",
+  "dashboard.connectors": "Konnetturi",
+  "dashboard.unavailable": "Mhux disponibbli għar-rwol tiegħek."
 }

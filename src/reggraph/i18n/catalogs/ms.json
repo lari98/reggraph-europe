@@ -16,5 +16,16 @@
   "rule.status.withdrawn": "Ditarik balik",
   "rule.status.rejected": "Ditolak",
   "notice.human_approval": "Perubahan ini hanya berkuat kuasa selepas kelulusan manusia.",
-  "notice.decision_support": "Platform ini menyokong pembuatan keputusan; ia tidak menggantikan pihak penyelia dan tidak memberikan arahan yang mengikat dari segi undang-undang."
+  "notice.decision_support": "Platform ini menyokong pembuatan keputusan; ia tidak menggantikan pihak penyelia dan tidak memberikan arahan yang mengikat dari segi undang-undang.",
+  "dashboard.title": "Papan pemuka pengurusan",
+  "dashboard.token": "Token akses",
+  "dashboard.load": "Muat",
+  "dashboard.registry": "Daftar",
+  "dashboard.exposure": "Pendedahan",
+  "dashboard.insurance": "Insurans",
+  "dashboard.stress": "Ujian tekanan",
+  "dashboard.rules": "Peraturan",
+  "dashboard.rates": "Kadar pertukaran",
+  "dashboard.connectors": "Penyambung",
+  "dashboard.unavailable": "Tidak tersedia untuk peranan anda."
 }

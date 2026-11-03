@@ -78,7 +78,7 @@ def test_all_24_eu_languages_present() -> None:
 def test_every_locale_has_a_catalog_with_every_key() -> None:
     translator = Translator()
     keys = translator.keys()
-    assert len(keys) == 15
+    assert len(keys) == 26
     for loc in SUPPORTED_LOCALES:
         for key in keys:
             text = translator.translate(key, loc.tag)

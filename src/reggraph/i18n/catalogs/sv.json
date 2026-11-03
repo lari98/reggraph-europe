@@ -16,5 +16,16 @@
   "rule.status.withdrawn": "Återkallad",
   "rule.status.rejected": "Avslagen",
   "notice.human_approval": "Denna ändring träder i kraft först efter mänskligt godkännande.",
-  "notice.decision_support": "Plattformen stöder beslut; den ersätter inte tillsynsmyndigheter och ger inga juridiskt bindande instruktioner."
+  "notice.decision_support": "Plattformen stöder beslut; den ersätter inte tillsynsmyndigheter och ger inga juridiskt bindande instruktioner.",
+  "dashboard.title": "Ledningspanel",
+  "dashboard.token": "Åtkomsttoken",
+  "dashboard.load": "Ladda",
+  "dashboard.registry": "Register",
+  "dashboard.exposure": "Exponeringar",
+  "dashboard.insurance": "Försäkring",
+  "dashboard.stress": "Stresstester",
+  "dashboard.rules": "Regler",
+  "dashboard.rates": "Växelkurser",
+  "dashboard.connectors": "Anslutningar",
+  "dashboard.unavailable": "Inte tillgängligt för din roll."
 }

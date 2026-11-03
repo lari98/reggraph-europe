@@ -7,6 +7,8 @@ H3    Every request gets an id (a client-supplied one is accepted only if it loo
 H4    Per-client rate limiting answers 429 with Retry-After.
 H5    Any unexpected exception becomes a generic localized 500: no stack trace, no path.
 H6    The caller's language is negotiated once and exposed as ``Content-Language``.
+H7    The dashboard page (only) gets a CSP that allows its own script and style files and
+      nothing else: no inline code, no third-party hosts, no framing.
 ====  ============================================================================
 """
 
@@ -30,6 +32,11 @@ log = logging.getLogger("reggraph.api")
 
 _REQUEST_ID_RE: Final = re.compile(r"^[A-Za-z0-9-]{8,64}$")
 _DOCS_PATHS: Final = ("/docs", "/openapi.json")
+_PAGE_PATHS: Final = ("/dashboard", "/dashboard/app.js", "/dashboard/app.css")
+PAGE_CSP: Final = (
+    "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; "
+    "base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+)  # no inline script or style, no third parties: the dashboard page loads only its own files
 
 SECURITY_HEADERS: Final[dict[str, str]] = {
     "X-Content-Type-Options": "nosniff",
@@ -150,6 +157,8 @@ def install_middleware(app: FastAPI, services: Services) -> None:
             if name == "Content-Security-Policy" and request.url.path in _DOCS_PATHS:
                 continue  # the interactive docs need scripts; they are disabled in prod
             response.headers[name] = value
+        if request.url.path in _PAGE_PATHS:
+            response.headers["Content-Security-Policy"] = PAGE_CSP
         response.headers["X-Request-ID"] = request.state.request_id
         response.headers["Content-Language"] = request.state.locale
         return response

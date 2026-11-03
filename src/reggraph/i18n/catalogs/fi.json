@@ -16,5 +16,16 @@
   "rule.status.withdrawn": "Peruutettu",
   "rule.status.rejected": "Hylätty",
   "notice.human_approval": "Tämä muutos tulee voimaan vasta ihmisen hyväksynnän jälkeen.",
-  "notice.decision_support": "Alusta tukee päätöksentekoa; se ei korvaa valvojia eikä anna oikeudellisesti sitovia ohjeita."
+  "notice.decision_support": "Alusta tukee päätöksentekoa; se ei korvaa valvojia eikä anna oikeudellisesti sitovia ohjeita.",
+  "dashboard.title": "Johdon kojelauta",
+  "dashboard.token": "Käyttöoikeustunnus",
+  "dashboard.load": "Lataa",
+  "dashboard.registry": "Rekisteri",
+  "dashboard.exposure": "Riskipositiot",
+  "dashboard.insurance": "Vakuutus",
+  "dashboard.stress": "Stressitestit",
+  "dashboard.rules": "Säännöt",
+  "dashboard.rates": "Valuuttakurssit",
+  "dashboard.connectors": "Liittymät",
+  "dashboard.unavailable": "Ei saatavilla roolillesi."
 }

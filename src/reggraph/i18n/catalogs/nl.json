@@ -16,5 +16,16 @@
   "rule.status.withdrawn": "Ingetrokken",
   "rule.status.rejected": "Afgewezen",
   "notice.human_approval": "Deze wijziging gaat pas in na goedkeuring door een mens.",
-  "notice.decision_support": "Het platform ondersteunt besluitvorming; het vervangt geen toezichthouders en geeft geen juridisch bindende instructies."
+  "notice.decision_support": "Het platform ondersteunt besluitvorming; het vervangt geen toezichthouders en geeft geen juridisch bindende instructies.",
+  "dashboard.title": "Managementdashboard",
+  "dashboard.token": "Toegangstoken",
+  "dashboard.load": "Laden",
+  "dashboard.registry": "Register",
+  "dashboard.exposure": "Blootstellingen",
+  "dashboard.insurance": "Verzekering",
+  "dashboard.stress": "Stresstests",
+  "dashboard.rules": "Regels",
+  "dashboard.rates": "Wisselkoersen",
+  "dashboard.connectors": "Connectoren",
+  "dashboard.unavailable": "Niet beschikbaar voor uw rol."
 }

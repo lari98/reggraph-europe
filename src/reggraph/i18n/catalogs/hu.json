@@ -16,5 +16,16 @@
   "rule.status.withdrawn": "Visszavonva",
   "rule.status.rejected": "Elutasítva",
   "notice.human_approval": "Ez a módosítás csak emberi jóváhagyás után lép hatályba.",
-  "notice.decision_support": "A platform döntéstámogató eszköz; nem helyettesíti a felügyeleti hatóságokat, és nem ad jogilag kötelező utasításokat."
+  "notice.decision_support": "A platform döntéstámogató eszköz; nem helyettesíti a felügyeleti hatóságokat, és nem ad jogilag kötelező utasításokat.",
+  "dashboard.title": "Vezetői irányítópult",
+  "dashboard.token": "Hozzáférési token",
+  "dashboard.load": "Betöltés",
+  "dashboard.registry": "Nyilvántartás",
+  "dashboard.exposure": "Kitettségek",
+  "dashboard.insurance": "Biztosítás",
+  "dashboard.stress": "Stressztesztek",
+  "dashboard.rules": "Szabályok",
+  "dashboard.rates": "Árfolyamok",
+  "dashboard.connectors": "Összekötők",
+  "dashboard.unavailable": "A szerepköréhez nem érhető el."
 }

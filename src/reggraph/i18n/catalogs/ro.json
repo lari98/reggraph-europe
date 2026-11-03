@@ -16,5 +16,16 @@
   "rule.status.withdrawn": "Retras",
   "rule.status.rejected": "Respins",
   "notice.human_approval": "Această modificare intră în vigoare numai după aprobarea de către un om.",
-  "notice.decision_support": "Platforma sprijină luarea deciziilor; nu înlocuiește autoritățile de supraveghere și nu oferă instrucțiuni obligatorii din punct de vedere juridic."
+  "notice.decision_support": "Platforma sprijină luarea deciziilor; nu înlocuiește autoritățile de supraveghere și nu oferă instrucțiuni obligatorii din punct de vedere juridic.",
+  "dashboard.title": "Panou de gestiune",
+  "dashboard.token": "Token de acces",
+  "dashboard.load": "Încarcă",
+  "dashboard.registry": "Registru",
+  "dashboard.exposure": "Expuneri",
+  "dashboard.insurance": "Asigurări",
+  "dashboard.stress": "Teste de stres",
+  "dashboard.rules": "Reguli",
+  "dashboard.rates": "Cursuri de schimb",
+  "dashboard.connectors": "Conectori",
+  "dashboard.unavailable": "Indisponibil pentru rolul dvs."
 }

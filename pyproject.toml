@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "reggraph-europe"
-version = "0.4.0"
+version = "0.5.0"
 description = "RegGraph Europe - EU-Swiss financial resilience and regulatory intelligence platform (decision support)"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -13,6 +13,8 @@ dependencies = [
     "fastapi>=0.115",
     "pydantic>=2.7",
     "uvicorn>=0.30",
+    "pyjwt[crypto]>=2.8",
+    "defusedxml>=0.7.1",
 ]
 
 [project.optional-dependencies]
@@ -25,6 +27,7 @@ dev = [
     "hypothesis>=6.100",
     "ruff>=0.5",
     "mypy>=1.10",
+    "types-defusedxml>=0.7",
     "bandit>=1.7",
     "pip-audit>=2.7",
 ]

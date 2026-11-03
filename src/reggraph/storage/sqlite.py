@@ -251,6 +251,48 @@ MIGRATIONS: Final[tuple[tuple[int, str], ...]] = (
         INSERT INTO schema_version VALUES (4, datetime('now'));
         """,
     ),
+    (
+        5,
+        """
+        CREATE TABLE connector_runs (
+            tenant_id TEXT NOT NULL,
+            run_id INTEGER NOT NULL,
+            connector TEXT NOT NULL CHECK (connector IN ('ecb_rates','eurlex_watch')),
+            status TEXT NOT NULL CHECK (status IN ('succeeded','unchanged','failed')),
+            started_by TEXT NOT NULL,
+            started_at TEXT NOT NULL,
+            summary_json TEXT NOT NULL,
+            PRIMARY KEY (tenant_id, run_id)
+        );
+        CREATE INDEX idx_conn_runs ON connector_runs (tenant_id, connector, started_at);
+        CREATE TABLE source_alerts (
+            tenant_id TEXT NOT NULL,
+            alert_id INTEGER NOT NULL,
+            source TEXT NOT NULL CHECK (source IN ('eurlex')),
+            item_key TEXT NOT NULL,
+            title TEXT NOT NULL,
+            url TEXT NOT NULL,
+            published TEXT,
+            status TEXT NOT NULL CHECK (status IN ('open','acknowledged')),
+            created_at TEXT NOT NULL,
+            acknowledged_by TEXT,
+            acknowledged_at TEXT,
+            PRIMARY KEY (tenant_id, alert_id),
+            UNIQUE (tenant_id, source, item_key)
+        );
+        CREATE TRIGGER conn_run_immutable BEFORE UPDATE ON connector_runs
+            BEGIN SELECT RAISE(ABORT, 'connector runs are immutable'); END;
+        CREATE TRIGGER conn_run_no_delete BEFORE DELETE ON connector_runs
+            BEGIN SELECT RAISE(ABORT, 'connector runs cannot be deleted'); END;
+        CREATE TRIGGER alert_core_immutable
+            BEFORE UPDATE OF tenant_id, alert_id, source, item_key, title, url, published,
+                created_at ON source_alerts
+            BEGIN SELECT RAISE(ABORT, 'alert content is immutable'); END;
+        CREATE TRIGGER alert_no_delete BEFORE DELETE ON source_alerts
+            BEGIN SELECT RAISE(ABORT, 'alerts cannot be deleted'); END;
+        INSERT INTO schema_version VALUES (5, datetime('now'));
+        """,
+    ),
 )
 
 Params = Sequence[Any]

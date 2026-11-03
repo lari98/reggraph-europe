@@ -52,6 +52,12 @@ GET     /v1/stress/runs                         stress:read          list runs
 GET     /v1/stress/runs/{id}                    stress:read          run and result
 GET     /v1/stress/runs/{id}/snapshot           stress:read          frozen inputs
 POST    /v1/stress/runs/{id}/verify             stress:read          recompute and check
+GET     /dashboard (+ app.js, app.css)          public page          the dashboard page (no data)
+GET     /v1/dashboard                           dashboard:read       role-shaped overview
+POST    /v1/connectors/{name}/run               connectors:run       run ecb_rates / eurlex_watch
+GET     /v1/connectors/runs                     connectors:read      connector run history
+GET     /v1/source-alerts                       connectors:read      EUR-Lex watch alerts
+POST    /v1/source-alerts/{id}/acknowledge      alerts:ack           mark an alert as reviewed
 ======  ======================================  ===================  =====================
 """
 
@@ -61,7 +67,7 @@ from dataclasses import asdict
 from datetime import date
 from typing import Any
 
-from fastapi import APIRouter, Depends, Path, Query
+from fastapi import APIRouter, Depends, Path, Query, Request, Response
 from pydantic import BaseModel
 
 from reggraph import __version__
@@ -69,6 +75,7 @@ from reggraph.api import schemas
 from reggraph.api.deps import Services, get_services, require
 from reggraph.core.errors import ValidationFailure
 from reggraph.currency import CURRENCIES, Money, format_money
+from reggraph.dashboard import STATIC_DIR
 from reggraph.exposure import BatchInput
 from reggraph.i18n import SUPPORTED_LOCALES
 from reggraph.jurisdictions import all_jurisdictions, get_jurisdiction
@@ -698,3 +705,109 @@ def verify_run(
     services: Services = Depends(get_services),
 ) -> dict[str, Any]:
     return _dump(services.stress.verify(who, run_id))
+
+
+# ------------------------------------------------------------------ dashboard (Phase 5)
+_PAGE_FILES = {
+    "/dashboard": ("index.html", "text/html; charset=utf-8"),
+    "/dashboard/app.js": ("app.js", "text/javascript; charset=utf-8"),
+    "/dashboard/app.css": ("app.css", "text/css; charset=utf-8"),
+}
+_PAGES = {
+    path: (STATIC_DIR.joinpath(name).read_bytes(), media)
+    for path, (name, media) in _PAGE_FILES.items()
+}  # read once at start-up: no path from the request ever touches the file system
+_LABEL_KEYS = (
+    "title",
+    "token",
+    "load",
+    "registry",
+    "exposure",
+    "insurance",
+    "stress",
+    "rules",
+    "rates",
+    "connectors",
+    "unavailable",
+)
+
+
+def _page(path: str) -> Response:
+    body, media = _PAGES[path]
+    return Response(content=body, media_type=media)
+
+
+@router.get("/dashboard", include_in_schema=False)
+def dashboard_page() -> Response:
+    return _page("/dashboard")
+
+
+@router.get("/dashboard/app.js", include_in_schema=False)
+def dashboard_script() -> Response:
+    return _page("/dashboard/app.js")
+
+
+@router.get("/dashboard/app.css", include_in_schema=False)
+def dashboard_style() -> Response:
+    return _page("/dashboard/app.css")
+
+
+@router.get("/v1/dashboard")
+def dashboard(
+    request: Request,
+    as_of: date | None = Query(default=None),
+    currency: str = Query(default="EUR", min_length=3, max_length=3),
+    who: Principal = Depends(require(Permission.DASHBOARD_READ)),
+    services: Services = Depends(get_services),
+) -> dict[str, Any]:
+    day = as_of or services.clock.now().date()
+    data = services.dashboard.build(who, day, currency.upper())
+    locale = request.state.locale
+    data["labels"] = {
+        f"dashboard.{k}": services.translator.translate(f"dashboard.{k}", locale)
+        for k in _LABEL_KEYS
+    }
+    return data
+
+
+# ------------------------------------------------------------------ connectors (Phase 5)
+@router.post("/v1/connectors/{name}/run")
+def run_connector(
+    name: str = Path(pattern=r"^[a-z_]{3,20}$"),
+    who: Principal = Depends(require(Permission.CONNECTORS_RUN)),
+    services: Services = Depends(get_services),
+) -> dict[str, Any]:
+    return _dump(services.connectors.run(who, name))
+
+
+@router.get("/v1/connectors/runs")
+def connector_runs(
+    connector: str | None = Query(default=None, pattern=r"^[a-z_]{3,20}$"),
+    limit: int = Query(default=50, ge=1, le=200),
+    after: int = Query(default=0, ge=0, le=2_000_000_000),
+    who: Principal = Depends(require(Permission.CONNECTORS_READ)),
+    services: Services = Depends(get_services),
+) -> list[dict[str, Any]]:
+    runs = services.connectors.list_runs(who, connector=connector, limit=limit, after=after)
+    return [_dump(r) for r in runs]
+
+
+@router.get("/v1/source-alerts")
+def source_alerts(
+    status: str | None = Query(default=None, pattern=r"^(open|acknowledged)$"),
+    limit: int = Query(default=50, ge=1, le=200),
+    after: int = Query(default=0, ge=0, le=2_000_000_000),
+    who: Principal = Depends(require(Permission.CONNECTORS_READ)),
+    services: Services = Depends(get_services),
+) -> list[dict[str, Any]]:
+    alerts = services.connectors.list_alerts(who, status=status, limit=limit, after=after)
+    return [_dump(a) for a in alerts]
+
+
+@router.post("/v1/source-alerts/{alert_id}/acknowledge")
+def acknowledge_alert(
+    alert_id: int = Path(ge=1, le=2_000_000_000),
+    who: Principal = Depends(require(Permission.ALERTS_ACK)),
+    services: Services = Depends(get_services),
+) -> dict[str, Any]:
+    return _dump(services.connectors.acknowledge(who, alert_id))

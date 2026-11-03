@@ -9,6 +9,15 @@ module also has its own version in `module_versions.json`. Format follows
 Newest first. Written automatically by `python tools/module_manifest.py bump ...`.
 
 <!-- module-log -->
+- **app-shell 0.5.0** (2026-11-03, minor): Release 0.5.0 (Phase 5): connector, OIDC and local-token settings
+- **api 0.5.0** (2026-11-03, minor): Dashboard page and API, connector and alert routes, CSP for the page, SSO routing in get_principal
+- **storage 0.5.0** (2026-11-03, minor): Migration 5: connector_runs and source_alerts with immutability triggers
+- **security 0.5.0** (2026-11-03, minor): OIDC verifier (RS256/ES256, JWKS cache); dashboard, connector and alert permissions
+- **i18n 0.2.0** (2026-11-03, minor): dashboard.* labels in all 28 catalogs
+- **core 0.2.0** (2026-11-03, minor): logsafe: secret-masking of every log record
+- **dashboard 0.1.0** (2026-11-03, new): Phase 5: role-shaped management dashboard read model and static page
+- **connectors 0.1.0** (2026-11-03, new): Phase 5: ECB reference-rate connector and EUR-Lex source watch (alerts), run history
+- **netio 0.1.0** (2026-11-03, new): Phase 5: sandboxed HTTPS fetcher (allow-list, public-address check, pinned TLS, size/time caps, no redirects)
 - **app-shell 0.4.0** (2026-11-03, minor): Release 0.4.0 (Phase 4): database_url and database_schema settings, postgres extra
 - **api 0.4.0** (2026-11-03, minor): Nine stress-lab routes; database_url / schema selection in the service container
 - **regulation 0.1.1** (2026-11-03, patch): Typed against the storage protocol (Db, Row)
@@ -33,6 +42,32 @@ Newest first. Written automatically by `python tools/module_manifest.py bump ...
 - **storage 0.2.0** (2026-11-03, minor): Migration 2: entity_versions and ownership_links with immutability triggers
 - **security 0.2.0** (2026-11-03, minor): Add registry:read and registry:write permissions to the role matrix
 - **registry 0.1.0** (2026-11-03, new): Phase 2: LEI-keyed entities, licences, ownership links, groups, entity-to-rule mapping
+
+## [0.5.0] - Phase 5: dashboard, connectors and single sign-on
+
+### Added
+- `GET /v1/dashboard` (role-shaped sections) and a static page at `/dashboard` with its own
+  strict content-security policy (no inline code, no third parties).
+- `netio`: the only module that opens sockets. HTTPS only, host allow-list, every resolved
+  address must be public, connection pinned to the checked address, verified TLS, no redirects,
+  size and time caps.
+- `connectors`: ECB reference rates (stored through the rate book) and an EUR-Lex feed watch that
+  creates alerts; immutable run history; one run per connector and tenant every 5 minutes.
+- OIDC access-token verification (RS256/ES256, JWKS cache, tenant/role claims); tokens starting
+  `v1.` stay local tokens; `REGGRAPH_ALLOW_LOCAL_TOKENS=false` turns them off once SSO is live.
+- `core.logsafe`: every log record is masked for tokens, passwords, secrets and DSNs.
+- Migration 5; permissions `dashboard:read`, `connectors:read|run`, `alerts:ack`; seven routes;
+  dashboard labels in all 28 catalogs (machine drafts); `docs/DASHBOARD_AND_INTEGRATIONS.md`.
+- 214 new tests, 34 of them attacker-style SSRF / XML / JWT / log-leak tests.
+
+### Changed
+- New runtime dependencies: `pyjwt[crypto]`, `defusedxml`. Dev: `types-defusedxml`.
+- Fixed a latent FastAPI trap: a shared `Path()` object cannot serve routes with different
+  parameter names (the new alert route uses its own).
+
+### Not in this release
+- Live calls to the ECB, EUR-Lex and an identity provider were not verified (no network in the
+  build environment). Scheduling and the browser login redirect are not included.
 
 ## [0.4.0] - Phase 4: stress lab and PostgreSQL
 

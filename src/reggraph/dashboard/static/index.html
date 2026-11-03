@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RegGraph Europe</title>
+<link rel="stylesheet" href="/dashboard/app.css">
+</head>
+<body>
+<header>
+  <h1 id="title">RegGraph Europe</h1>
+  <form id="controls" autocomplete="off">
+    <label><span id="l-token">Access token</span>
+      <input id="token" type="password" autocomplete="off" spellcheck="false" required></label>
+    <label>Currency <input id="currency" value="EUR" maxlength="3" size="4"></label>
+    <label>Date <input id="asof" type="date"></label>
+    <button type="submit" id="load">Load</button>
+  </form>
+  <p id="status" role="status"></p>
+</header>
+<main id="board"></main>
+<script src="/dashboard/app.js" defer></script>
+</body>
+</html>

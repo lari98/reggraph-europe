@@ -16,5 +16,16 @@
   "rule.status.withdrawn": "Retirado",
   "rule.status.rejected": "Rejeitado",
   "notice.human_approval": "Esta alteração só produz efeitos após aprovação humana.",
-  "notice.decision_support": "A plataforma apoia decisões; não substitui as autoridades de supervisão nem dá instruções juridicamente vinculativas."
+  "notice.decision_support": "A plataforma apoia decisões; não substitui as autoridades de supervisão nem dá instruções juridicamente vinculativas.",
+  "dashboard.title": "Painel de gestão",
+  "dashboard.token": "Token de acesso",
+  "dashboard.load": "Carregar",
+  "dashboard.registry": "Registo",
+  "dashboard.exposure": "Exposições",
+  "dashboard.insurance": "Seguros",
+  "dashboard.stress": "Testes de esforço",
+  "dashboard.rules": "Regras",
+  "dashboard.rates": "Taxas de câmbio",
+  "dashboard.connectors": "Conectores",
+  "dashboard.unavailable": "Indisponível para o seu perfil."
 }

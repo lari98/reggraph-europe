@@ -1,20 +1,20 @@
 {
   "modules": {
     "api": {
-      "fingerprint": "1306d0cdce9bcf9814f76886a5ba29fc2fd910e92ff74d5a5a380af62944abeb",
+      "fingerprint": "a1de764bd92157ef03964afcf319fabee0ac652f0114c8b1850cf8f4530dec44",
       "paths": [
         "src/reggraph/api"
       ],
-      "version": "0.4.0"
+      "version": "0.5.0"
     },
     "app-shell": {
-      "fingerprint": "4a45f6f5665c9ebed5c3e5fd3727bd949b0abb0041547744e4d19251bdd32e11",
+      "fingerprint": "c2e4bc2c35809778766b1eeb18b2e622c59259c4701298701de9a34c36324992",
       "paths": [
         "src/reggraph/__init__.py",
         "src/reggraph/config.py",
         "src/reggraph/cli.py"
       ],
-      "version": "0.4.0"
+      "version": "0.5.0"
     },
     "connectivity": {
       "fingerprint": "18b41274f4f6ac93a99944d0de6578ac2868023fed5d402ecb8decad0326e916",
@@ -23,12 +23,19 @@
       ],
       "version": "0.1.0"
     },
+    "connectors": {
+      "fingerprint": "9f97bf6f866e860f2664630dbad6324a9fe488e9e61444ec69edd063c5e7fade",
+      "paths": [
+        "src/reggraph/connectors"
+      ],
+      "version": "0.1.0"
+    },
     "core": {
-      "fingerprint": "ba862a03cec564629a91fde9cf7122814c07434e94560f545638294d08d50d44",
+      "fingerprint": "985ac1bd9172b939311d5dbddab2b7eddc7cd630a07d0f851869a60924a80e10",
       "paths": [
         "src/reggraph/core"
       ],
-      "version": "0.1.0"
+      "version": "0.2.0"
     },
     "currency": {
       "fingerprint": "51fc78cea63637d8ef61fd1f5dca05c222e3d775036c042aa0be520f10a95991",
@@ -36,6 +43,13 @@
         "src/reggraph/currency"
       ],
       "version": "0.2.0"
+    },
+    "dashboard": {
+      "fingerprint": "d805540582da2ed74ee1cf23de20942b244980711a608e4e5b4b5f1766107293",
+      "paths": [
+        "src/reggraph/dashboard"
+      ],
+      "version": "0.1.0"
     },
     "exposure": {
       "fingerprint": "4c270759f2dde8b134913cf73d14983c96381b867370266b5ef30e7dca315ce3",
@@ -52,11 +66,11 @@
       "version": "0.1.1"
     },
     "i18n": {
-      "fingerprint": "61d3515921b646ac8e4d7630f832bf5aec8dc9089e7a25aa451ebc900bb2cb52",
+      "fingerprint": "55bdd9a00e0124712c38cf3a90206c6f092758abdf8800dd472d3b3845d6697c",
       "paths": [
         "src/reggraph/i18n"
       ],
-      "version": "0.1.0"
+      "version": "0.2.0"
     },
     "insurance": {
       "fingerprint": "6dabf3e77070d5531ebdb098620757c7eeae513c3a92ebc1b79e45986965f937",
@@ -69,6 +83,13 @@
       "fingerprint": "8b2102d375f98c87f15a296ae9aa085ac49d8d4b5db61229272e74a40ba08134",
       "paths": [
         "src/reggraph/jurisdictions"
+      ],
+      "version": "0.1.0"
+    },
+    "netio": {
+      "fingerprint": "d0fd38c91b2903f10d4bbe4f6242758af207940550abc9198fa3a615b9651cf1",
+      "paths": [
+        "src/reggraph/netio"
       ],
       "version": "0.1.0"
     },
@@ -87,18 +108,18 @@
       "version": "0.1.1"
     },
     "security": {
-      "fingerprint": "b7f807ad8ee7d2b980a2e7eac4ad41a77b35aaf0f67273642ee185366030a574",
+      "fingerprint": "5dab0bcc4651e1ae39df95cbd334af23e5735e0dec36179ccd78a3e8099d8f81",
       "paths": [
         "src/reggraph/security"
       ],
-      "version": "0.4.0"
+      "version": "0.5.0"
     },
     "storage": {
-      "fingerprint": "a8a98019e1aa8831e265e48ec649694d20036a7f070c72ac033904ced1820972",
+      "fingerprint": "3b10fc849b7c54f05013849123272ebfc5402229313ac6882b5f5d61912b1ade",
       "paths": [
         "src/reggraph/storage"
       ],
-      "version": "0.4.0"
+      "version": "0.5.0"
     },
     "stress": {
       "fingerprint": "6d1b156a5377bb678a638c8aa9c3f0d91ba0a89a6cd56c50c1ab4060ad0c7328",

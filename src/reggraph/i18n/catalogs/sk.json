@@ -16,5 +16,16 @@
   "rule.status.withdrawn": "Stiahnuté",
   "rule.status.rejected": "Zamietnuté",
   "notice.human_approval": "Táto zmena nadobudne účinnosť až po schválení človekom.",
-  "notice.decision_support": "Platforma podporuje rozhodovanie; nenahrádza orgány dohľadu ani nedáva právne záväzné pokyny."
+  "notice.decision_support": "Platforma podporuje rozhodovanie; nenahrádza orgány dohľadu ani nedáva právne záväzné pokyny.",
+  "dashboard.title": "Riadiaci panel",
+  "dashboard.token": "Prístupový token",
+  "dashboard.load": "Načítať",
+  "dashboard.registry": "Register",
+  "dashboard.exposure": "Expozície",
+  "dashboard.insurance": "Poistenie",
+  "dashboard.stress": "Záťažové testy",
+  "dashboard.rules": "Pravidlá",
+  "dashboard.rates": "Výmenné kurzy",
+  "dashboard.connectors": "Konektory",
+  "dashboard.unavailable": "Pre vašu rolu nie je dostupné."
 }

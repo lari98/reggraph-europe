@@ -16,5 +16,16 @@
   "rule.status.withdrawn": "Umaknjeno",
   "rule.status.rejected": "Zavrnjeno",
   "notice.human_approval": "Ta sprememba začne veljati šele po človeški odobritvi.",
-  "notice.decision_support": "Platforma podpira odločanje; ne nadomešča nadzornih organov in ne daje pravno zavezujočih navodil."
+  "notice.decision_support": "Platforma podpira odločanje; ne nadomešča nadzornih organov in ne daje pravno zavezujočih navodil.",
+  "dashboard.title": "Nadzorna plošča",
+  "dashboard.token": "Dostopni žeton",
+  "dashboard.load": "Naloži",
+  "dashboard.registry": "Register",
+  "dashboard.exposure": "Izpostavljenosti",
+  "dashboard.insurance": "Zavarovanje",
+  "dashboard.stress": "Stresni testi",
+  "dashboard.rules": "Pravila",
+  "dashboard.rates": "Menjalni tečaji",
+  "dashboard.connectors": "Konektorji",
+  "dashboard.unavailable": "Za vašo vlogo ni na voljo."
 }

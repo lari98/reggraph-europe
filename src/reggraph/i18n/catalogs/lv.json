@@ -16,5 +16,16 @@
   "rule.status.withdrawn": "Atsaukts",
   "rule.status.rejected": "Noraidīts",
   "notice.human_approval": "Šīs izmaiņas stājas spēkā tikai pēc cilvēka apstiprinājuma.",
-  "notice.decision_support": "Platforma atbalsta lēmumu pieņemšanu; tā neaizstāj uzraudzības iestādes un nesniedz juridiski saistošus norādījumus."
+  "notice.decision_support": "Platforma atbalsta lēmumu pieņemšanu; tā neaizstāj uzraudzības iestādes un nesniedz juridiski saistošus norādījumus.",
+  "dashboard.title": "Vadības panelis",
+  "dashboard.token": "Piekļuves marķieris",
+  "dashboard.load": "Ielādēt",
+  "dashboard.registry": "Reģistrs",
+  "dashboard.exposure": "Riska darījumi",
+  "dashboard.insurance": "Apdrošināšana",
+  "dashboard.stress": "Stresa testi",
+  "dashboard.rules": "Noteikumi",
+  "dashboard.rates": "Valūtas kursi",
+  "dashboard.connectors": "Savienotāji",
+  "dashboard.unavailable": "Jūsu lomai nav pieejams."
 }

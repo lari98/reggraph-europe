@@ -16,5 +16,16 @@
   "rule.status.withdrawn": "Tagasi võetud",
   "rule.status.rejected": "Tagasi lükatud",
   "notice.human_approval": "See muudatus jõustub alles pärast inimese kinnitust.",
-  "notice.decision_support": "Platvorm toetab otsuste tegemist; see ei asenda järelevalveasutusi ega anna õiguslikult siduvaid juhiseid."
+  "notice.decision_support": "Platvorm toetab otsuste tegemist; see ei asenda järelevalveasutusi ega anna õiguslikult siduvaid juhiseid.",
+  "dashboard.title": "Juhtpaneel",
+  "dashboard.token": "Juurdepääsutõend",
+  "dashboard.load": "Laadi",
+  "dashboard.registry": "Register",
+  "dashboard.exposure": "Riskipositsioonid",
+  "dashboard.insurance": "Kindlustus",
+  "dashboard.stress": "Stressitestid",
+  "dashboard.rules": "Reeglid",
+  "dashboard.rates": "Vahetuskursid",
+  "dashboard.connectors": "Ühendused",
+  "dashboard.unavailable": "Teie rollile kättesaamatu."
 }

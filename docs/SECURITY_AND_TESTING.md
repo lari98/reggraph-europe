@@ -68,6 +68,23 @@ Registry threats (Phase 2) — tests in `tests/security/test_registry_attacks.py
 | T54 | Database credentials leaking through logs or `repr` | `database_url` excluded from `repr`; documented as a secret | `test_settings_never_print_the_database_url` |
 | T55 | SQL injection / `%` and `?` in data on PostgreSQL | driver-side binding; `%` escaped before placeholder translation | `test_parameters_are_data_not_sql` |
 | T56 | Two processes handing out the same id on PostgreSQL | advisory lock per transaction | `test_concurrent_writers_do_not_collide` |
+| T57 | SSRF through connectors (private/loopback/metadata addresses, look-alike hosts, userinfo, odd ports, header splitting, caller-chosen URLs) | allow-listed hosts from settings, all resolved addresses must be public, URL character rules | `test_bad_urls_are_refused`, `test_non_public_addresses_are_refused`, `test_callers_cannot_steer_the_outbound_request` |
+| T58 | DNS rebinding between check and connect | connection pinned to the checked address | `test_good_request_is_pinned_to_the_checked_address` |
+| T59 | Man-in-the-middle / wrong certificate name | verified TLS ≥ 1.2 for the real host name | `test_real_transport_checks_the_certificate_name`, `test_real_transport_rejects_an_untrusted_certificate` |
+| T60 | Oversized, slow, redirecting or wrong-type responses | size/time caps, redirects refused, content-type allow-list | `test_real_transport_enforces_the_size_limit`, `test_bad_answers_are_refused`, `test_oversized_and_slow_sources_fail_cleanly` |
+| T61 | XML bombs and external entities in feeds | `defusedxml`, DTDs refused, item caps | `test_ecb_xml_attacks_are_refused`, `test_feed_is_capped_and_bad_xml_refused` |
+| T62 | Poisoned rate data (exponent, NaN, zero, duplicates, absurd values, partial store) | strict parser + rate-book rules, all-or-nothing | `test_ecb_bad_files_are_refused`, `test_poisoned_rate_file_stores_nothing` |
+| T63 | Hostile feed content (links to other sites, markup in titles, control/bidi characters) | EUR-Lex-only https links, text cleaning, JSON + nosniff | `test_feed_links_to_other_places_are_dropped`, `test_hostile_feed_cannot_plant_links_or_markup` |
+| T64 | Using the API to hammer a public source / racing runs | one run per connector and tenant per 5 minutes; insert-only rates | `test_hammering_a_connector_reaches_the_source_once`, `test_parallel_runs_store_the_rates_once` |
+| T65 | JWT algorithm confusion, `alg: none`, tokens carrying their own keys | RS256/ES256 only, key by `kid` from the key set | `test_hmac_with_the_public_key_as_secret_is_refused`, `test_alg_none_is_refused`, `test_keys_embedded_in_the_token_are_ignored` |
+| T66 | Forged, expired, wrong-issuer/audience SSO tokens; bad tenant/role claims | signature, issuer, audience, clock and claim checks; one generic 401 | `test_bad_claims_are_refused`, `test_forged_and_replayed_sso_tokens`, `test_tampered_payload_is_refused` |
+| T67 | Key-set flooding with unknown `kid`s | cache + one refresh per minute | `test_keys_are_cached_and_refresh_is_rate_limited` |
+| T68 | Tenant or role spoofing via headers, query or a look-alike token | tenant/roles only from verified claims | `test_tenant_comes_only_from_the_verified_claim`, `test_a_sso_token_cannot_pose_as_a_local_one` |
+| T69 | Dashboard showing more than the caller's role allows, or other tenants' data | per-section permission, tenant filter on every query | `test_each_role_gets_its_own_view`, `test_machine_accounts_cannot_use_the_dashboard`, `test_other_tenants_see_nothing` |
+| T70 | Script injection on the dashboard page | no inline code, CSP `script-src 'self'`, `textContent` only | `test_page_files_are_served_with_a_strict_policy` |
+| T71 | Tokens, passwords or DSNs in logs, including tracebacks | record-time masking | `test_no_secrets_reach_the_logs`, `test_secrets_are_masked` |
+| T72 | Unsafe configuration (partial SSO, http URLs, IP-literal or wildcard hosts, local tokens off without SSO) | validated at start-up | `test_unsafe_settings_do_not_start` |
+| T73 | Rewriting connector history or alert content | DB triggers (both back ends) | `test_history_cannot_be_rewritten` |
 
 Property-based tests (`TestProperties`, Hypothesis, 200 examples each) check that
 `clean_text` never returns dangerous characters, `negotiate` always returns a supported tag,

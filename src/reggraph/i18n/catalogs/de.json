@@ -16,5 +16,16 @@
   "rule.status.withdrawn": "Zurückgezogen",
   "rule.status.rejected": "Abgelehnt",
   "notice.human_approval": "Diese Änderung wird erst nach menschlicher Freigabe wirksam.",
-  "notice.decision_support": "Die Plattform unterstützt Entscheidungen; sie ersetzt keine Aufsichtsbehörden und erteilt keine rechtlich bindenden Anweisungen."
+  "notice.decision_support": "Die Plattform unterstützt Entscheidungen; sie ersetzt keine Aufsichtsbehörden und erteilt keine rechtlich bindenden Anweisungen.",
+  "dashboard.title": "Management-Dashboard",
+  "dashboard.token": "Zugriffstoken",
+  "dashboard.load": "Laden",
+  "dashboard.registry": "Register",
+  "dashboard.exposure": "Risikopositionen",
+  "dashboard.insurance": "Versicherung",
+  "dashboard.stress": "Stresstests",
+  "dashboard.rules": "Regeln",
+  "dashboard.rates": "Wechselkurse",
+  "dashboard.connectors": "Konnektoren",
+  "dashboard.unavailable": "Für Ihre Rolle nicht verfügbar."
 }

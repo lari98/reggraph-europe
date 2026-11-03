@@ -38,6 +38,14 @@ The full citation list for the regulatory content (R1–R17) is in the Pitch Pac
 
 Re-check licences before commercial distribution; `pip-audit` covers vulnerabilities, not licences.
 
+## Phase 5 references
+
+* ECB, *euro foreign exchange reference rates* (published XML layout) — read to write the parser.
+* OpenID Connect Core 1.0; RFC 7517 (JWK), RFC 7519 (JWT), RFC 8725 (JWT best current practice).
+* OWASP SSRF Prevention and XML External Entity Prevention cheat sheets.
+* Libraries used as dependencies, not copied: PyJWT (MIT), defusedxml (PSF).
+* All Phase 5 code is original.
+
 ## Honest caveats
 
 * Translations were produced as drafts and are labelled for native-speaker review.

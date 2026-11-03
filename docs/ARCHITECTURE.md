@@ -51,12 +51,12 @@ and `security` depend on `core`; `regulation` and `fx` use those; `registry` bui
 | Layer | Modules | May import |
 |---|---|---|
 | 0 | `core` | stdlib |
-| 1 | `jurisdictions`, `currency`, `i18n`, `storage` | layer 0 |
+| 1 | `jurisdictions`, `currency`, `i18n`, `storage`, `netio` | layer 0 |
 | 2 | `security` | layers 0–1 |
 | 3 | `regulation`, `fx` | layers 0–2 |
-| 4 | `registry` | layers 0–3 |
+| 4 | `registry`, `connectors` | layers 0–3 |
 | 5 | `exposure`, `insurance` | layers 0–4 |
-| 6 | `connectivity`, `stress` | layers 0–5 |
+| 6 | `connectivity`, `stress`, `dashboard` | layers 0–5 |
 | 7 | `api`, `cli`, `config` | all |
 
 ## Key design decisions
@@ -78,10 +78,18 @@ and `security` depend on `core`; `regulation` and `fx` use those; `registry` bui
 | D13 | Ownership links are insert-only; ending one adds an end date | Past group structures stay reproducible |
 | D14 | "Control" is a stated simplification (> 50 % or branch) and the API says so | Honest about what is indicative |
 | D15 | Graph walks are depth- and size-capped | A hostile or broken graph cannot exhaust memory |
+| D16 | Only `netio` opens sockets; hosts come from start-up settings, never from requests | One reviewed place for SSRF, TLS and size limits |
+| D17 | Connectors feed existing stores (rate book, alerts) and never bypass their rules | External data gets the same checks as typed-in data |
+| D18 | A source watch creates alerts, never rules | Machine-read law needs a person (D2 extended) |
+| D19 | SSO tokens and local tokens meet in one `get_principal`; the tenant and roles still come only from verified claims | D6 holds for every login method |
+| D20 | The dashboard page is static and holds no data; data comes from the API with the user's own token | A leaked page file leaks nothing; strict CSP, no inline code |
+| D21 | Log records are masked when created | Protection does not depend on how logging is configured |
 
 ## Extension points (later phases)
 
 * `storage.Database` → PostgreSQL implementation with the same interface (Phase 4).
-* `currency.rates.RateProvider` protocol → live ECB / SNB / MAS feeds (Phase 5).
-* `regulation.store.RuleStore.ingest` → EUR-Lex / FINMA / FCA / SEC / MAS connectors (Phase 5, 6).
+* `currency.rates.RateProvider` protocol → ECB rates arrive through `connectors` and the rate book (Phase 5); SNB / MAS feeds follow.
+* `regulation.store.RuleStore.ingest` → EUR-Lex watch creates alerts (Phase 5); FINMA / FCA / SEC / MAS connectors in Phase 6.
+* `netio.Fetcher` protocol → the only way out of the platform; swapped for fakes in tests.
+* `security.oidc.OidcVerifier` → same `verify(token) -> Principal` shape as `TokenSigner`; `api.deps.get_principal` routes by token prefix.
 * New modules (insurance connectivity, exposure graph, stress lab) are added as new packages above `registry`.

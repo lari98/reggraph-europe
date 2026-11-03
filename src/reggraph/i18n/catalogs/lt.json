@@ -16,5 +16,16 @@
   "rule.status.withdrawn": "Atšaukta",
   "rule.status.rejected": "Atmesta",
   "notice.human_approval": "Šis pakeitimas įsigalioja tik žmogui jį patvirtinus.",
-  "notice.decision_support": "Platforma padeda priimti sprendimus; ji nepakeičia priežiūros institucijų ir neteikia teisiškai privalomų nurodymų."
+  "notice.decision_support": "Platforma padeda priimti sprendimus; ji nepakeičia priežiūros institucijų ir neteikia teisiškai privalomų nurodymų.",
+  "dashboard.title": "Valdymo skydelis",
+  "dashboard.token": "Prieigos žetonas",
+  "dashboard.load": "Įkelti",
+  "dashboard.registry": "Registras",
+  "dashboard.exposure": "Pozicijos",
+  "dashboard.insurance": "Draudimas",
+  "dashboard.stress": "Streso testai",
+  "dashboard.rules": "Taisyklės",
+  "dashboard.rates": "Valiutų kursai",
+  "dashboard.connectors": "Jungtys",
+  "dashboard.unavailable": "Jūsų vaidmeniui neprieinama."
 }

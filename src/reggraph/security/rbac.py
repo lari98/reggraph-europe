@@ -63,10 +63,16 @@ class Permission(StrEnum):
     INSURANCE_WRITE = "insurance:write"
     STRESS_READ = "stress:read"
     STRESS_WRITE = "stress:write"
+    DASHBOARD_READ = "dashboard:read"
+    CONNECTORS_READ = "connectors:read"
+    CONNECTORS_RUN = "connectors:run"
+    ALERTS_ACK = "alerts:ack"
 
 
 _P = Permission
-_VIEWER = frozenset({_P.REF_READ, _P.FX_CONVERT, _P.RULES_READ, _P.REGISTRY_READ})
+_VIEWER = frozenset(
+    {_P.REF_READ, _P.FX_CONVERT, _P.RULES_READ, _P.REGISTRY_READ, _P.DASHBOARD_READ}
+)
 _DATA = frozenset(
     {
         _P.EXPOSURE_READ,
@@ -77,15 +83,25 @@ _DATA = frozenset(
         _P.STRESS_WRITE,
     }
 )  # commercially sensitive exposure and insurance data: not for plain viewers
-_ANALYST = _VIEWER | _DATA | {_P.RULES_PROPOSE, _P.TASKS_READ, _P.REGISTRY_WRITE}
+_ANALYST = (
+    _VIEWER | _DATA | {_P.RULES_PROPOSE, _P.TASKS_READ, _P.REGISTRY_WRITE, _P.CONNECTORS_READ}
+)
 
 ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
     Role.VIEWER: _VIEWER,
     Role.ANALYST: _ANALYST,
-    Role.COMPLIANCE_OFFICER: _ANALYST | {_P.RULES_APPROVE, _P.RULES_WITHDRAW},
+    Role.COMPLIANCE_OFFICER: _ANALYST | {_P.RULES_APPROVE, _P.RULES_WITHDRAW, _P.ALERTS_ACK},
     Role.TENANT_ADMIN: _VIEWER
     | _DATA
-    | {_P.TASKS_READ, _P.FX_WRITE, _P.AUDIT_READ, _P.REGISTRY_WRITE},
+    | {
+        _P.TASKS_READ,
+        _P.FX_WRITE,
+        _P.AUDIT_READ,
+        _P.REGISTRY_WRITE,
+        _P.CONNECTORS_READ,
+        _P.CONNECTORS_RUN,
+        _P.ALERTS_ACK,
+    },
     Role.INGESTION_SERVICE: frozenset({_P.RULES_INGEST, _P.RULES_READ}),
 }
 

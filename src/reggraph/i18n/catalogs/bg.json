@@ -16,5 +16,16 @@
   "rule.status.withdrawn": "Оттеглено",
   "rule.status.rejected": "Отхвърлено",
   "notice.human_approval": "Тази промяна влиза в сила само след одобрение от човек.",
-  "notice.decision_support": "Платформата подпомага вземането на решения; тя не замества надзорните органи и не дава правнообвързващи указания."
+  "notice.decision_support": "Платформата подпомага вземането на решения; тя не замества надзорните органи и не дава правнообвързващи указания.",
+  "dashboard.title": "Табло за управление",
+  "dashboard.token": "Входен токен",
+  "dashboard.load": "Зареди",
+  "dashboard.registry": "Регистър",
+  "dashboard.exposure": "Експозиции",
+  "dashboard.insurance": "Застраховане",
+  "dashboard.stress": "Стрес тестове",
+  "dashboard.rules": "Правила",
+  "dashboard.rates": "Валутни курсове",
+  "dashboard.connectors": "Връзки с източници",
+  "dashboard.unavailable": "Недостъпно за вашата роля."
 }

@@ -16,5 +16,16 @@
   "rule.status.withdrawn": "Tarraingthe siar",
   "rule.status.rejected": "Diúltaithe",
   "notice.human_approval": "Ní thiocfaidh an t-athrú seo i bhfeidhm ach tar éis formheasa ag duine.",
-  "notice.decision_support": "Tacaíonn an ardán le cinnteoireacht; ní ionadaíonn sé na húdaráis mhaoirseachta agus ní thugann sé treoracha atá ceangailteach go dlíthiúil."
+  "notice.decision_support": "Tacaíonn an ardán le cinnteoireacht; ní ionadaíonn sé na húdaráis mhaoirseachta agus ní thugann sé treoracha atá ceangailteach go dlíthiúil.",
+  "dashboard.title": "Painéal bainistíochta",
+  "dashboard.token": "Comhartha rochtana",
+  "dashboard.load": "Luchtaigh",
+  "dashboard.registry": "Clár",
+  "dashboard.exposure": "Nochtadh riosca",
+  "dashboard.insurance": "Árachas",
+  "dashboard.stress": "Tástálacha struis",
+  "dashboard.rules": "Rialacha",
+  "dashboard.rates": "Rátaí malairte",
+  "dashboard.connectors": "Nascóirí",
+  "dashboard.unavailable": "Níl ar fáil do do ról."
 }

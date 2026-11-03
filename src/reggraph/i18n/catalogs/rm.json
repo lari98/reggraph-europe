@@ -16,5 +16,16 @@
   "rule.status.withdrawn": "Retratg",
   "rule.status.rejected": "Refusà",
   "notice.human_approval": "Questa midada vegn en vigur be suenter l'approvaziun d'in uman.",
-  "notice.decision_support": "La plattafurma sustegna decisiuns; ella na remplazza naginas autoritads da surveglianza e na dat naginas instrucziuns giuridicamain obligatorias."
+  "notice.decision_support": "La plattafurma sustegna decisiuns; ella na remplazza naginas autoritads da surveglianza e na dat naginas instrucziuns giuridicamain obligatorias.",
+  "dashboard.title": "Tavla da controlla",
+  "dashboard.token": "Token d'access",
+  "dashboard.load": "Chargiar",
+  "dashboard.registry": "Register",
+  "dashboard.exposure": "Expussiuns",
+  "dashboard.insurance": "Assicuranza",
+  "dashboard.stress": "Tests da stress",
+  "dashboard.rules": "Reglas",
+  "dashboard.rates": "Cuors da midada",
+  "dashboard.connectors": "Connecturs",
+  "dashboard.unavailable": "Betg disponibel per voss rol."
 }

@@ -16,5 +16,16 @@
   "rule.status.withdrawn": "Retiré",
   "rule.status.rejected": "Rejeté",
   "notice.human_approval": "Cette modification n'entre en vigueur qu'après approbation humaine.",
-  "notice.decision_support": "La plateforme aide à la décision ; elle ne remplace pas les autorités de surveillance et ne donne pas d'instructions juridiquement contraignantes."
+  "notice.decision_support": "La plateforme aide à la décision ; elle ne remplace pas les autorités de surveillance et ne donne pas d'instructions juridiquement contraignantes.",
+  "dashboard.title": "Tableau de bord de gestion",
+  "dashboard.token": "Jeton d'accès",
+  "dashboard.load": "Charger",
+  "dashboard.registry": "Registre",
+  "dashboard.exposure": "Expositions",
+  "dashboard.insurance": "Assurance",
+  "dashboard.stress": "Tests de résistance",
+  "dashboard.rules": "Règles",
+  "dashboard.rates": "Taux de change",
+  "dashboard.connectors": "Connecteurs",
+  "dashboard.unavailable": "Indisponible pour votre rôle."
 }

@@ -54,6 +54,12 @@ development `reggraph issue-token`). **Language:** send `Accept-Language`; the r
 | GET | `/v1/stress/runs`, `/v1/stress/runs/{id}` | `stress:read` | run records; one run with result |
 | GET | `/v1/stress/runs/{id}/snapshot` | `stress:read` | the frozen inputs |
 | POST | `/v1/stress/runs/{id}/verify` | `stress:read` | recompute and check hashes and signature |
+| GET | `/v1/dashboard` | `dashboard:read` | role-shaped overview; `currency`, `as_of`; sections need their own read permission |
+| GET | `/dashboard` (+ `/dashboard/app.js`, `/dashboard/app.css`) | public (no data) | the dashboard page |
+| POST | `/v1/connectors/{name}/run` | `connectors:run` | run `ecb_rates` or `eurlex_watch` (409 if run in the last 5 minutes) |
+| GET | `/v1/connectors/runs` | `connectors:read` | run history; `connector`, `limit` ≤ 200, `after` |
+| GET | `/v1/source-alerts` | `connectors:read` | EUR-Lex watch alerts; `status` open/acknowledged |
+| POST | `/v1/source-alerts/{id}/acknowledge` | `alerts:ack` | mark an alert as reviewed |
 
 Stress lab details: [STRESS_LAB.md](STRESS_LAB.md).
 

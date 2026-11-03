@@ -16,5 +16,16 @@
   "rule.status.withdrawn": "Povučeno",
   "rule.status.rejected": "Odbijeno",
   "notice.human_approval": "Ova promjena stupa na snagu tek nakon odobrenja čovjeka.",
-  "notice.decision_support": "Platforma podržava odlučivanje; ne zamjenjuje nadzorna tijela niti daje pravno obvezujuće upute."
+  "notice.decision_support": "Platforma podržava odlučivanje; ne zamjenjuje nadzorna tijela niti daje pravno obvezujuće upute.",
+  "dashboard.title": "Upravljačka ploča",
+  "dashboard.token": "Pristupni token",
+  "dashboard.load": "Učitaj",
+  "dashboard.registry": "Registar",
+  "dashboard.exposure": "Izloženosti",
+  "dashboard.insurance": "Osiguranje",
+  "dashboard.stress": "Testovi otpornosti",
+  "dashboard.rules": "Pravila",
+  "dashboard.rates": "Tečajevi",
+  "dashboard.connectors": "Konektori",
+  "dashboard.unavailable": "Nije dostupno za vašu ulogu."
 }

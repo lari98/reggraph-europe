@@ -4,11 +4,11 @@
 change, cross-border exposure and resilience across the EU-27, Switzerland, the United
 Kingdom, the United States and Singapore.
 
-> **Status: Phase 4 of 7 complete (foundation, registry, exposure, insurance, stress lab, PostgreSQL), release 0.4.0.**
+> **Status: Phase 5 of 7 complete (foundation, registry, exposure, insurance, stress lab, PostgreSQL, dashboard, connectors, SSO), release 0.5.0.**
 > This repository implements the platform core described in the *RegGraph Europe – Pitch Pack*:
 > the regulatory-intelligence engine, the bank and corporate registry, insurance connectivity,
 > the financial exposure graph, the stress testing laboratory, the security model, multi-language
-> and multi-currency support. Later phases add the dashboard and integrations (see [docs/PHASES.md](docs/PHASES.md)).
+> and multi-currency support, plus the management dashboard, sandboxed connectors and single sign-on. Later phases add more regulators and the hardening for release 1.0 (see [docs/PHASES.md](docs/PHASES.md)).
 
 The platform is **decision support, not legal advice**. Every rule enters the system as a
 draft and becomes effective only after a named compliance officer approves it.
@@ -22,12 +22,15 @@ draft and becomes effective only after a named compliance officer approves it.
 | Exposure graph | Immutable exposure batches with source, hash and loader; converted edges, concentration (shares, HHI, group view), neighbourhoods; every result has lineage and a reproducibility hash ([docs/EXPOSURE_AND_INSURANCE.md](docs/EXPOSURE_AND_INSURANCE.md)) |
 | Insurance connectivity | Versioned insurer-to-insured contracts, reinsurance links, cover concentration, and the *interconnection* view: entities that are both counterparty and insurer |
 | Stress lab | Versioned scenarios (currency fall, default with group contagion, haircut, insurer failure), deterministic engine, insurance recovery, capital-buffer breaches; every run freezes its inputs, is signed and can be re-verified ([docs/STRESS_LAB.md](docs/STRESS_LAB.md)) |
+| Dashboard | Role-shaped overview (registry, exposure, insurance, stress, rules, rates, connectors) as an API and a small page at `/dashboard`; a role only gets the sections its other endpoints would show ([docs/DASHBOARD_AND_INTEGRATIONS.md](docs/DASHBOARD_AND_INTEGRATIONS.md)) |
+| Connectors | ECB reference rates into the rate book; EUR-Lex feed watch that raises *alerts* for people to review (never rules); all outbound calls go through one sandboxed fetcher (allow-list, public addresses only, pinned TLS, size/time caps, no redirects) |
+| Single sign-on | OpenID Connect access tokens (RS256/ES256, key set cached, tenant and roles from claims) next to the existing local tokens; secrets are masked in every log record |
 | Storage | SQLite by default, PostgreSQL by setting `REGGRAPH_DATABASE_URL`; one migration set for both, whole test suite run on both ([docs/POSTGRESQL.md](docs/POSTGRESQL.md)) |
 | Languages | 24 EU official languages + Swiss (de/fr/it/rm), US and UK English, Singapore (English, Chinese, Malay, Tamil) — 34 locale tags, `Accept-Language` negotiation |
 | Currencies | EUR plus the six EU members outside the euro (CZK, DKK, HUF, PLN, RON, SEK), CHF, USD, GBP, SGD; legacy BGN / HRK for old data |
 | Money | `Decimal` only (no floating point), exact half-even rounding, EUR-triangulated conversion, refuses stale rates |
 | Security | Signed tokens with key rotation, role matrix, per-tenant tamper-evident audit chain, rate limiting, strict input hygiene, hardened HTTP headers |
-| Quality gates | 500 tests (231 in the attacker-style security suite), 97.5 % coverage (gate 90 %), ruff, mypy `--strict`, bandit and pip-audit all clean at the Phase 4 release, on Python 3.11 and 3.13; the full suite also passes on PostgreSQL 16 |
+| Quality gates | 714 tests (265 in the attacker-style security suite), 96 % coverage on SQLite (gate 90 %), ruff, mypy `--strict` and bandit clean at the Phase 5 release; the suite passes on Python 3.11 and 3.13 and on PostgreSQL 16 (see the Phase 5 notes in the changelog) |
 | Versioning | Every module has its own version and content fingerprint; CI fails if code changed without a bump |
 
 ## Quick start
@@ -85,8 +88,10 @@ docs/                         architecture, standards, security, i18n, versionin
 
 * Translations are **machine drafts** marked for native-speaker review. Legal wording must be
   reviewed before any customer-facing use.
-* Rates are supplied by the tenant (for example from the ECB reference feed); the platform
-  does not fetch them yet. Conversion refuses rates older than five days.
-* SQLite is used in Phase 1; PostgreSQL arrives in Phase 4 behind the same storage interface.
+* Rates come from the tenant or from the ECB connector (started by a tenant admin; no built-in
+  scheduler yet). Conversion refuses rates older than five days. Live calls to the ECB, EUR-Lex
+  and an identity provider were not possible in the build environment: check them in staging.
+* SQLite is the default; PostgreSQL is available behind the same storage interface (Phase 4).
+* SSO verifies provider tokens; the browser login redirect is done by your front end / provider.
 * Group "control" is an indicative test (more than 50 % or a branch), not a full legal consolidation analysis.
 * No external penetration test has been performed yet; it is the gate for Phase 7.

@@ -9,16 +9,21 @@ from fastapi import Depends, Request
 
 from reggraph.config import Settings
 from reggraph.connectivity import Connectivity
+from reggraph.connectors import ConnectorService
 from reggraph.core.clock import Clock, SystemClock
 from reggraph.core.errors import AuthenticationError
+from reggraph.core.logsafe import install_log_redaction
 from reggraph.currency.rates import Converter
+from reggraph.dashboard import DashboardService
 from reggraph.exposure import ExposureAnalysis, ExposureStore
 from reggraph.fx import RateBook
 from reggraph.i18n import Translator
 from reggraph.insurance import ContractStore
+from reggraph.netio import Fetcher, SafeFetcher
 from reggraph.registry import EntityStore
 from reggraph.regulation import RuleStore
 from reggraph.security.audit import AuditLog
+from reggraph.security.oidc import OidcVerifier
 from reggraph.security.ratelimit import RateLimiter
 from reggraph.security.rbac import Permission, Principal
 from reggraph.security.signing import ResultSigner
@@ -45,12 +50,23 @@ class Services:
     translator: Translator
     signer: TokenSigner
     limiter: RateLimiter
+    connectors: ConnectorService
+    dashboard: DashboardService
+    oidc: OidcVerifier | None = None
 
     def converter_for(self, tenant_id: str) -> Converter:
         return Converter(self.ratebook.provider_for(tenant_id), self.clock)
 
 
-def build_services(settings: Settings, clock: Clock | None = None) -> Services:
+def build_services(
+    settings: Settings,
+    clock: Clock | None = None,
+    *,
+    connector_fetcher: Fetcher | None = None,
+    oidc_fetcher: Fetcher | None = None,
+) -> Services:
+    """Wire everything. The two fetchers are injectable so tests never touch the internet."""
+    install_log_redaction()
     clk = clock or SystemClock()
     db = open_database(settings.db_path, settings.database_url, settings.database_schema)
     audit = AuditLog(db, clk)
@@ -74,6 +90,26 @@ def build_services(settings: Settings, clock: Clock | None = None) -> Services:
         ResultSigner(settings.token_keys, settings.active_kid),
         converter_for,
     )
+    oidc: OidcVerifier | None = None
+    if settings.oidc_enabled:
+        oidc = OidcVerifier(
+            issuer=settings.oidc_issuer,
+            audience=settings.oidc_audience,
+            jwks_url=settings.oidc_jwks_url,
+            fetcher=oidc_fetcher or SafeFetcher({settings.oidc_jwks_host()}),
+            clock=clk,
+            tenant_claim=settings.oidc_tenant_claim,
+            roles_claim=settings.oidc_roles_claim,
+        )
+    connectors = ConnectorService(
+        db,
+        audit,
+        clk,
+        ratebook,
+        connector_fetcher or SafeFetcher(settings.connector_hosts),
+        ecb_url=settings.ecb_rates_url,
+        eurlex_url=settings.eurlex_feed_url,
+    )
     return Services(
         settings=settings,
         clock=clk,
@@ -91,6 +127,9 @@ def build_services(settings: Settings, clock: Clock | None = None) -> Services:
         translator=Translator(),
         signer=TokenSigner(settings.token_keys, settings.active_kid, clk),
         limiter=RateLimiter(clk, per_minute=settings.rate_per_minute, burst=settings.rate_burst),
+        connectors=connectors,
+        dashboard=DashboardService(db, analysis),
+        oidc=oidc,
     )
 
 
@@ -109,7 +148,14 @@ def get_principal(request: Request, services: Services = Depends(get_services)) 
     scheme, _, token = header.partition(" ")
     if scheme.lower() != "bearer" or not token:
         raise AuthenticationError("missing bearer token")
-    return services.signer.verify(token.strip())
+    token = token.strip()
+    if token.startswith("v1."):
+        if not services.settings.allow_local_tokens:
+            raise AuthenticationError("local tokens are switched off")
+        return services.signer.verify(token)
+    if services.oidc is not None:
+        return services.oidc.verify(token)
+    raise AuthenticationError("unsupported token")
 
 
 def require(permission: Permission) -> Callable[[Principal], Principal]:

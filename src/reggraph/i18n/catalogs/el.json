@@ -16,5 +16,16 @@
   "rule.status.withdrawn": "Αποσύρθηκε",
   "rule.status.rejected": "Απορρίφθηκε",
   "notice.human_approval": "Αυτή η αλλαγή τίθεται σε ισχύ μόνο μετά από έγκριση από άνθρωπο.",
-  "notice.decision_support": "Η πλατφόρμα υποστηρίζει τη λήψη αποφάσεων· δεν αντικαθιστά τις εποπτικές αρχές ούτε δίνει νομικά δεσμευτικές οδηγίες."
+  "notice.decision_support": "Η πλατφόρμα υποστηρίζει τη λήψη αποφάσεων· δεν αντικαθιστά τις εποπτικές αρχές ούτε δίνει νομικά δεσμευτικές οδηγίες.",
+  "dashboard.title": "Πίνακας διαχείρισης",
+  "dashboard.token": "Διακριτικό πρόσβασης",
+  "dashboard.load": "Φόρτωση",
+  "dashboard.registry": "Μητρώο",
+  "dashboard.exposure": "Ανοίγματα",
+  "dashboard.insurance": "Ασφάλιση",
+  "dashboard.stress": "Προσομοιώσεις ακραίων καταστάσεων",
+  "dashboard.rules": "Κανόνες",
+  "dashboard.rates": "Ισοτιμίες",
+  "dashboard.connectors": "Σύνδεσμοι πηγών",
+  "dashboard.unavailable": "Δεν είναι διαθέσιμο για τον ρόλο σας."
 }

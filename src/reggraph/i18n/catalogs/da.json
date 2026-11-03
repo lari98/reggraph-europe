@@ -16,5 +16,16 @@
   "rule.status.withdrawn": "Trukket tilbage",
   "rule.status.rejected": "Afvist",
   "notice.human_approval": "Denne ændring træder først i kraft efter menneskelig godkendelse.",
-  "notice.decision_support": "Platformen understøtter beslutninger; den erstatter ikke tilsynsmyndigheder og giver ikke juridisk bindende instrukser."
+  "notice.decision_support": "Platformen understøtter beslutninger; den erstatter ikke tilsynsmyndigheder og giver ikke juridisk bindende instrukser.",
+  "dashboard.title": "Ledelsesoverblik",
+  "dashboard.token": "Adgangstoken",
+  "dashboard.load": "Hent",
+  "dashboard.registry": "Register",
+  "dashboard.exposure": "Eksponeringer",
+  "dashboard.insurance": "Forsikring",
+  "dashboard.stress": "Stresstest",
+  "dashboard.rules": "Regler",
+  "dashboard.rates": "Valutakurser",
+  "dashboard.connectors": "Konnektorer",
+  "dashboard.unavailable": "Ikke tilgængeligt for din rolle."
 }

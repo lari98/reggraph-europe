@@ -14,13 +14,22 @@ from reggraph.api.routes import router
 from reggraph.config import Settings
 from reggraph.core.clock import Clock
 from reggraph.core.errors import AuthenticationError, RegGraphError
+from reggraph.netio import Fetcher
 
 _HTTP_KEYS = {404: "error.not_found", 405: "error.not_found", 403: "error.forbidden"}
 
 
-def create_app(settings: Settings | None = None, clock: Clock | None = None) -> FastAPI:
+def create_app(
+    settings: Settings | None = None,
+    clock: Clock | None = None,
+    *,
+    connector_fetcher: Fetcher | None = None,
+    oidc_fetcher: Fetcher | None = None,
+) -> FastAPI:
     cfg = settings or Settings.from_env()
-    services: Services = build_services(cfg, clock)
+    services: Services = build_services(
+        cfg, clock, connector_fetcher=connector_fetcher, oidc_fetcher=oidc_fetcher
+    )
     app = FastAPI(
         title="RegGraph Europe",
         version=__version__,

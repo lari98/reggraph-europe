@@ -16,5 +16,16 @@
   "rule.status.withdrawn": "Withdrawn",
   "rule.status.rejected": "Rejected",
   "notice.human_approval": "This change takes effect only after human approval.",
-  "notice.decision_support": "This platform supports decisions; it does not replace supervisors or give legally binding instructions."
+  "notice.decision_support": "This platform supports decisions; it does not replace supervisors or give legally binding instructions.",
+  "dashboard.title": "Management dashboard",
+  "dashboard.token": "Access token",
+  "dashboard.load": "Load",
+  "dashboard.registry": "Registry",
+  "dashboard.exposure": "Exposures",
+  "dashboard.insurance": "Insurance",
+  "dashboard.stress": "Stress tests",
+  "dashboard.rules": "Rules",
+  "dashboard.rates": "Exchange rates",
+  "dashboard.connectors": "Connectors",
+  "dashboard.unavailable": "Not available for your role."
 }
