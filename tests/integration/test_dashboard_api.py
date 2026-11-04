@@ -183,6 +183,11 @@ def test_page_files_are_served_with_a_strict_policy(world: TestClient) -> None:
     assert "innerHTML" not in script.text and "eval(" not in script.text
     assert "localStorage" not in script.text and "sessionStorage" not in script.text
     assert world.get("/dashboard/app.css").status_code == 200
+    icon = world.get("/dashboard/icon.svg")
+    assert icon.status_code == 200 and icon.headers["content-type"].startswith("image/svg+xml")
+    assert "<script" not in icon.text and "onload" not in icon.text  # a picture, never code
+    assert "img-src 'self'" in icon.headers["content-security-policy"]
+    assert "style=" not in page.text and "style=" not in script.text.replace(".style.", "")
     # every other route keeps the locked-down policy
     other = world.get("/health").headers["content-security-policy"]
     assert other == "default-src 'none'; frame-ancestors 'none'"

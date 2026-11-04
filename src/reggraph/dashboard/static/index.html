@@ -10,27 +10,49 @@
 <link rel="stylesheet" href="/dashboard/app.css">
 </head>
 <body>
-<a class="skip" href="#board">Skip to content</a>
-<header class="top">
-  <div class="brand">
+<a class="skip" href="#main">Skip to content</a>
+<div id="signin" class="signin" hidden>
+  <form id="signin-form" class="signin-card" autocomplete="off">
     <span class="logo" aria-hidden="true">RG</span>
-    <div>
-      <h1 id="title">RegGraph Europe</h1>
-      <p class="sub" id="status" role="status" aria-live="polite"></p>
-    </div>
-    <span id="offline" class="badge badge-offline" hidden>OFFLINE</span>
-  </div>
-  <form id="controls" autocomplete="off">
-    <label class="token-field"><span id="l-token">Access token</span>
+    <h1 id="signin-title">RegGraph Europe</h1>
+    <p class="muted" id="signin-help">Paste your access token. It stays in this tab's memory only.</p>
+    <label><span id="l-token">Access token</span>
       <input id="token" type="password" autocomplete="off" spellcheck="false" required></label>
-    <label><span id="l-cur">Currency</span>
-      <input id="currency" value="EUR" maxlength="3" size="4" pattern="[A-Za-z]{3}"></label>
-    <label><span id="l-date">Date</span> <input id="asof" type="date"></label>
-    <button type="submit" id="load">Load</button>
+    <p id="signin-error" class="err" role="alert"></p>
+    <button type="submit" class="btn btn-primary" id="load">Open dashboard</button>
   </form>
-</header>
-<main id="board" tabindex="-1" aria-live="polite"></main>
-<footer id="notice" class="foot"></footer>
+</div>
+<div id="app" class="app" hidden>
+  <aside class="side">
+    <div class="brand"><span class="logo" aria-hidden="true">RG</span>
+      <div><strong id="title">RegGraph Europe</strong><span class="brand-sub">Ecosystem intelligence</span></div></div>
+    <nav id="nav" aria-label="Main"></nav>
+    <div class="side-foot"><span id="offline" class="badge badge-offline" hidden>OFFLINE</span>
+      <span id="who" class="side-muted"></span></div>
+  </aside>
+  <div class="col">
+    <header class="bar">
+      <div class="search" role="search">
+        <label class="sr-only" for="q">Search entities</label>
+        <input id="q" type="search" placeholder="Search company or LEI   ( / )" autocomplete="off"
+          role="combobox" aria-expanded="false" aria-controls="q-list" aria-autocomplete="list">
+        <ul id="q-list" class="q-list" role="listbox" hidden></ul>
+      </div>
+      <label class="ctl"><span>Currency</span>
+        <input id="currency" value="EUR" maxlength="3" size="4" pattern="[A-Za-z]{3}"></label>
+      <label class="ctl"><span>As of</span><input id="asof" type="date"></label>
+      <button type="button" class="btn" id="refresh" title="Reload data">Refresh</button>
+      <button type="button" class="btn" id="theme" title="Switch light / dark">Theme</button>
+      <button type="button" class="btn" id="print" title="Print or save as PDF">Print</button>
+      <button type="button" class="btn" id="signout">Sign out</button>
+    </header>
+    <p id="status" class="status" role="status" aria-live="polite"></p>
+    <main id="main" tabindex="-1"></main>
+    <footer id="notice" class="foot"></footer>
+  </div>
+</div>
+<div id="drawer-root"></div>
+<div id="toasts" class="toasts" role="status" aria-live="polite"></div>
 <script src="/dashboard/app.js" defer></script>
 </body>
 </html>

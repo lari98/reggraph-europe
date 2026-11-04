@@ -57,6 +57,22 @@ HTTP port to the internet.
 
 A container image is *not* part of 0.5.1; do not rely on any Dockerfile until Phase 7 provides a tested one.
 
+## 3a. What the console contains (all read-only except where noted)
+
+| Page | Drill-down | Source endpoints |
+|---|---|---|
+| Overview | KPI cards, donuts, bars and the network link into every other page | `/v1/dashboard`, `/v1/exposures/edges` |
+| Entities | filter, sort, CSV; row opens the entity | `/v1/entities` |
+| Entity (7 tabs) | profile, ownership/group, concentration (HHI), insurance cover, applicable rules, ecosystem graph, version history | `/v1/entities/{lei}/...` |
+| Exposure | relationships, concentration per holder, data-batch lineage | `/v1/exposures/...` |
+| Insurance | contracts with history drawer | `/v1/contracts` |
+| Stress tests | run detail, loss drivers, frozen inputs, **Verify** (recomputes and checks the signature) | `/v1/stress/...` |
+| Rules | library with decision trail drawer, review tasks | `/v1/rules`, `/v1/review-tasks` |
+| Data & audit | audit-chain check, audit trail, connectors (disabled offline), alerts (acknowledge) | `/v1/audit`, `/v1/connectors/...`, `/v1/source-alerts` |
+
+Every number comes from the API with the caller's role applied; the page adds no data of its own.
+Interface wording outside the section titles is English in this release (all 28 catalogs cover titles only).
+
 ## 4. Quick checks before showing it to a stakeholder
 
 - `python tools/module_manifest.py check` and `pytest` are green.

@@ -1,4 +1,4 @@
-"""Dashboard in a real browser: fonts, colours, shapes, layout, CSP and privacy.
+"""Dashboard console in a real browser: colours, fonts, layout, drill-down, roles, privacy.
 
 Needs Chromium through Playwright; the tests skip themselves when it is not installed.
 Every foreground/background pair of the style sheet is checked against WCAG 2.1 AA.
@@ -13,6 +13,7 @@ import threading
 import time
 from collections.abc import Iterator
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -21,7 +22,7 @@ from reggraph.api.deps import build_services
 from reggraph.config import Settings
 from reggraph.core.clock import SystemClock
 from reggraph.dashboard import STATIC_DIR
-from reggraph.demo import seed
+from reggraph.demo import L, seed
 
 sync_api = pytest.importorskip("playwright.sync_api")
 CSS = Path(STATIC_DIR, "app.css").read_text(encoding="utf-8")
@@ -31,10 +32,14 @@ def _tokens(block: str) -> dict[str, str]:
     return dict(re.findall(r"--([a-z0-9-]+):\s*(#[0-9a-fA-F]{6})", block))
 
 
-_ROOT = CSS.split("@media (prefers-color-scheme: dark)")[0]
-_DARK = CSS.split("@media (prefers-color-scheme: dark)")[1].split("}")[0]
-LIGHT = _tokens(_ROOT)
-DARK = {**LIGHT, **_tokens(_DARK)}
+def _block(start: str) -> str:
+    i = CSS.index(start)
+    return CSS[i : CSS.index("}", i)]
+
+
+LIGHT = _tokens(_block(":root {"))
+DARK = {**LIGHT, **_tokens(_block(':root[data-theme="dark"] {'))}
+DARK_MEDIA = {**LIGHT, **_tokens(_block(':root:not([data-theme="light"]) {'))}
 
 
 def _lum(hex_: str) -> float:
@@ -52,28 +57,43 @@ def ratio(a: str, b: str) -> float:
 
 TEXT_PAIRS = [
     ("ink", "card"), ("ink", "bg"), ("muted", "card"), ("muted", "bg"),
+    ("accent", "card"), ("accent", "bg"), ("accent-soft-ink", "accent-soft"),
+    ("on-accent", "accent"), ("ink", "accent-soft"), ("ink", "track"),
+    ("side-ink", "side-bg"), ("side-muted", "side-bg"), ("side-ink", "side-active"),
+    ("side-muted", "side-active"),
     ("ok", "ok-bg"), ("warn", "warn-bg"), ("bad", "bad-bg"), ("info", "info-bg"),
-    ("on-brand", "brand-a"), ("on-brand", "brand-b"),
 ]  # fmt: skip
 GRAPHIC = ["c1", "c2", "c3", "c4", "c5", "c6"]
+
+
+def test_token_sets_are_complete_and_dark_blocks_agree() -> None:
+    assert len(LIGHT) >= 29 and set(LIGHT) == set(DARK)
+    assert DARK == DARK_MEDIA  # system-dark and the manual toggle must look identical
 
 
 @pytest.mark.parametrize("theme", ["light", "dark"])
 def test_text_colour_pairs_meet_wcag_aa(theme: str) -> None:
     t = LIGHT if theme == "light" else DARK
     for fg, bg in TEXT_PAIRS:
-        assert ratio(t[fg], t[bg]) >= 4.5, (theme, fg, bg, ratio(t[fg], t[bg]))
+        assert ratio(t[fg], t[bg]) >= 4.5, (theme, fg, bg, round(ratio(t[fg], t[bg]), 2))
 
 
 @pytest.mark.parametrize("theme", ["light", "dark"])
 def test_chart_colours_are_visible_on_the_card(theme: str) -> None:
     t = LIGHT if theme == "light" else DARK
     for c in GRAPHIC:
-        assert ratio(t[c], t["card"]) >= 3.0, (theme, c, ratio(t[c], t["card"]))
+        assert ratio(t[c], t["card"]) >= 3.0, (theme, c, round(ratio(t[c], t["card"]), 2))
+    for c in ("line-strong",):
+        assert ratio(t[c], t["card"]) >= 1.3  # input borders stay visible
+
+
+def test_style_sheet_has_no_external_resources() -> None:
+    assert "@import" not in CSS and "url(" not in CSS and "http" not in CSS
+    assert "system-ui" in CSS and "font-face" not in CSS  # system fonts only
 
 
 @pytest.fixture(scope="module")
-def server() -> Iterator[str]:
+def server() -> Iterator[dict[str, str]]:
     import uvicorn
 
     settings = Settings(
@@ -81,10 +101,12 @@ def server() -> Iterator[str]:
         token_keys={"ui": secrets.token_urlsafe(48).encode()},
         active_kid="ui",
         offline=True,
+        rate_burst=2000,
+        rate_per_minute=20000,
     )
     services = build_services(settings, SystemClock())
-    who = seed(services)["admin"]
-    token = services.signer.issue(who, ttl_seconds=3600)
+    people = seed(services)
+    tokens = {r: services.signer.issue(p, ttl_seconds=3600) for r, p in people.items()}
     with socket.socket() as s:
         s.bind(("127.0.0.1", 0))
         port = s.getsockname()[1]
@@ -102,13 +124,14 @@ def server() -> Iterator[str]:
         if srv.started:
             break
         time.sleep(0.05)
-    yield f"http://127.0.0.1:{port}/dashboard#token={token}"
+    base = f"http://127.0.0.1:{port}/dashboard"
+    yield {"base": base, **{r: f"{base}#token={t}" for r, t in tokens.items()}}
     srv.should_exit = True
     thread.join(timeout=5)
 
 
 @pytest.fixture(scope="module")
-def browser() -> Iterator[object]:
+def browser() -> Iterator[Any]:
     with sync_api.sync_playwright() as p:
         try:
             b = p.chromium.launch()
@@ -118,72 +141,228 @@ def browser() -> Iterator[object]:
         b.close()
 
 
-VIEWPORTS = [(1440, 900), (1024, 768), (820, 1100), (390, 844), (320, 640)]
+def open_page(
+    browser: Any, url: str, *, size: tuple[int, int] = (1280, 900), scheme: str = "light"
+) -> Any:
+    ctx = browser.new_context(
+        viewport={"width": size[0], "height": size[1]}, color_scheme=scheme, accept_downloads=True
+    )
+    page = ctx.new_page()
+    page.problems = []  # type: ignore[attr-defined]
+    page.requests = []  # type: ignore[attr-defined]
+    page.on(
+        "console",
+        lambda m: page.problems.append(m.text) if m.type in ("error", "warning") else None,
+    )
+    page.on("pageerror", lambda e: page.problems.append(str(e)))
+    page.on("request", lambda r: page.requests.append(r.url))
+    page.goto(url)
+    return page
+
+
+def settle(page: Any) -> None:
+    page.wait_for_function(
+        "document.querySelector('#main') && !document.querySelector('#main .skel')", timeout=10000
+    )
+
+
+def h1(page: Any, prefix: str) -> None:
+    """Wait until the page heading starts with ``prefix`` (the route change is asynchronous)."""
+    page.wait_for_function(
+        "p => (document.querySelector('#main h1') || {textContent: ''}).textContent.startsWith(p)",
+        arg=prefix,
+        timeout=10000,
+    )
+    settle(page)
+
+
+def go(page: Any, route: str) -> None:
+    page.evaluate(f"location.hash = '#/{route}'")
+    page.wait_for_timeout(150)
+    settle(page)
+
+
+ROUTES = [
+    "overview", "entities", f"entity/{L['NORDHAFEN']}", f"entity/{L['NORDHAFEN']}/group",
+    f"entity/{L['NORDHAFEN']}/exposure", f"entity/{L['NORDHAFEN']}/insurance",
+    f"entity/{L['NORDHAFEN']}/rules", f"entity/{L['NORDHAFEN']}/network",
+    f"entity/{L['NORDHAFEN']}/history", "exposure", "insurance", "stress", "stress/3",
+    "rules", "data",
+]  # fmt: skip
+
+
+def test_every_page_renders_cleanly_and_stays_local(browser: Any, server: dict[str, str]) -> None:
+    page = open_page(browser, server["admin"])
+    page.wait_for_selector(".kpi")
+    for route in ROUTES:
+        go(page, route)
+        assert page.locator("#main .err").count() == 0, route
+        assert page.locator("#main h1").count() == 1, route
+        assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth"), route
+    assert page.problems == []  # no CSP violation, script error or failed request
+    assert all(u.startswith("http://127.0.0.1") for u in page.requests)
+    page.context.close()
 
 
 @pytest.mark.parametrize("scheme", ["light", "dark"])
-@pytest.mark.parametrize("size", VIEWPORTS)
-def test_page_renders_cleanly(browser, server: str, size: tuple[int, int], scheme: str) -> None:  # type: ignore[no-untyped-def]
-    ctx = browser.new_context(viewport={"width": size[0], "height": size[1]}, color_scheme=scheme)
-    page = ctx.new_page()
-    problems: list[str] = []
-    requests: list[str] = []
-    page.on(
-        "console", lambda m: problems.append(m.text) if m.type in ("error", "warning") else None
-    )
-    page.on("pageerror", lambda e: problems.append(str(e)))
-    page.on("request", lambda r: requests.append(r.url))
-    page.goto(server)
+@pytest.mark.parametrize("size", [(1440, 900), (1024, 768), (820, 1100), (390, 844), (320, 640)])
+def test_overview_layout_at_every_size(
+    browser: Any, server: dict[str, str], size: tuple[int, int], scheme: str
+) -> None:
+    page = open_page(browser, server["admin"], size=size, scheme=scheme)
     page.wait_for_selector(".kpi")
+    settle(page)
     page.wait_for_timeout(700)
-    assert problems == []  # no CSP violation, script error or failed request
-    assert all(u.startswith("http://127.0.0.1") for u in requests)  # nothing leaves the machine
-    assert page.evaluate("location.hash") == ""  # the token is gone from the address bar
+    assert page.problems == []
     assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
     assert page.locator(".kpi").count() == 6
-    assert page.locator("svg.donut").count() == 2
-    assert page.locator(".bar .fill").count() >= 6
-    assert page.locator("#offline").is_visible()
+    assert page.locator("svg.donut").count() == 2 and page.locator("svg.net").count() == 1
     widths = page.evaluate(
-        "[...document.querySelectorAll('.bar .fill')].map(e => e.getBoundingClientRect().width)"
+        "[...document.querySelectorAll('.bar-i .fill')].map(e => e.getBoundingClientRect().width)"
     )
-    assert all(w > 0 for w in widths)
-    ctx.close()
+    assert widths and all(w > 0 for w in widths)
+    assert page.evaluate("location.hash") == "#/overview"  # the token is gone from the address bar
+    assert page.locator("#offline").is_visible()
+    page.context.close()
 
 
-def test_fonts_and_shapes(browser, server: str) -> None:  # type: ignore[no-untyped-def]
-    ctx = browser.new_context(viewport={"width": 1280, "height": 900})
-    page = ctx.new_page()
-    page.goto(server)
+def test_fonts_and_shapes(browser: Any, server: dict[str, str]) -> None:
+    page = open_page(browser, server["admin"])
     page.wait_for_selector(".kpi")
-    fam = page.evaluate("getComputedStyle(document.body).fontFamily")
-    assert "system-ui" in fam and "http" not in fam  # system fonts only, no downloads
-    assert page.evaluate("getComputedStyle(document.body).fontSize") == "15px"
-    assert page.evaluate("getComputedStyle(document.querySelector('h1')).fontWeight") in {
-        "700",
-        "bold",
-    }
-    assert (
-        page.evaluate("getComputedStyle(document.querySelector('section')).borderRadius") == "14px"
-    )
-    assert page.evaluate(
-        "getComputedStyle(document.querySelector('.top')).backgroundImage"
-    ).startswith("linear-gradient")
-    # the donut segments add up to the full circle
-    total = page.evaluate(
+    css = page.evaluate
+    fam = css("getComputedStyle(document.body).fontFamily")
+    assert "system-ui" in fam and "http" not in fam
+    assert css("getComputedStyle(document.body).fontSize") == "14px"
+    assert css("getComputedStyle(document.querySelector('#main h1')).fontSize") == "22px"
+    assert css("getComputedStyle(document.querySelector('.card')).borderRadius") == "14px"
+    assert css("getComputedStyle(document.querySelector('.kpi')).borderTopWidth") == "3px"
+    assert css("getComputedStyle(document.querySelector('.side')).position") == "sticky"
+    total = css(
         "[...document.querySelectorAll('svg.donut')[0].querySelectorAll('.seg')]"
         ".map(c => parseFloat(c.getAttribute('stroke-dasharray'))).reduce((a,b)=>a+b,0)"
     )
-    assert abs(total - 2 * 3.14159265 * 46) < 0.5
-    # every control reachable by keyboard and labelled
-    assert page.evaluate("[...document.querySelectorAll('input')].every(i => i.labels.length > 0)")
-    ctx.close()
+    assert abs(total - 2 * 3.14159265 * 46) < 0.5  # the segments close the circle
+    assert css(
+        "[...document.querySelectorAll('input,select')].every(i => i.labels.length > 0 || i.getAttribute('aria-label'))"
+    )
+    assert (
+        css("document.querySelector('#nav a[aria-current=page]').textContent.trim()") == "Overview"
+    )
+    page.context.close()
 
 
-def test_no_page_script_can_be_injected(browser, server: str) -> None:  # type: ignore[no-untyped-def]
-    ctx = browser.new_context()
-    page = ctx.new_page()
-    page.goto(server.split("#")[0] + "#token=<img src=x onerror=alert(1)>")
-    page.wait_for_timeout(300)
-    assert page.locator("img").count() == 0  # a malformed fragment is ignored, never parsed
-    ctx.close()
+def test_drill_down_from_overview_to_a_record(browser: Any, server: dict[str, str]) -> None:
+    page = open_page(browser, server["admin"])
+    page.wait_for_selector(".kpi")
+    settle(page)
+    page.locator(".legend a", has_text="bank").first.click()  # donut legend -> filtered list
+    settle(page)
+    assert page.evaluate("location.hash").startswith("#/entities?type=bank")
+    assert page.locator("select[aria-label=Type]").input_value() == "bank"
+    assert page.locator("tbody tr.link").count() == 5
+    page.locator("tbody tr.link", has_text="Nordhafen").first.click()  # row -> entity
+    h1(page, "Nordhafen Bank")
+    page.locator(".tabs a", has_text="Exposure").click()
+    page.wait_for_selector("#main .chip:has-text('high concentration')")
+    page.locator(".bar-i a", has_text="Kronos").first.click()  # bar -> counterparty entity
+    h1(page, "Kronos Industrie")
+    page.go_back()
+    h1(page, "Nordhafen")
+    assert page.problems == []
+    page.context.close()
+
+
+def test_table_sorting_filtering_paging_and_csv(browser: Any, server: dict[str, str]) -> None:
+    page = open_page(browser, server["admin"])
+    page.wait_for_selector(".kpi")
+    go(page, "entities")
+    first = lambda: page.locator("tbody tr").first.locator("td").first.inner_text()  # noqa: E731
+    page.locator("th button", has_text="Name").click()
+    assert page.locator("th[aria-sort=ascending]").count() == 1
+    a = first()
+    page.locator("th button", has_text="Name").click()
+    assert page.locator("th[aria-sort=descending]").count() == 1 and first() != a
+    page.locator("input[type=search][aria-label='Filter this table']").fill("tulp")
+    assert page.locator("tbody tr.link").count() == 1
+    page.locator("input[type=search][aria-label='Filter this table']").fill("")
+    assert "1-15 of 15" in page.locator(".pager").inner_text()
+    with page.expect_download() as dl:
+        page.get_by_role("button", name="Export CSV").click()
+    text = Path(dl.value.path()).read_text(encoding="utf-8")
+    assert text.splitlines()[0].startswith('"Name","LEI"') and len(text.splitlines()) == 16
+    page.context.close()
+
+
+def test_search_drawer_verify_and_acknowledge(browser: Any, server: dict[str, str]) -> None:
+    page = open_page(browser, server["admin"])
+    page.wait_for_selector(".kpi")
+    page.keyboard.press("/")  # keyboard shortcut focuses the search box
+    assert page.evaluate("document.activeElement.id") == "q"
+    page.keyboard.type("solaris")
+    page.wait_for_selector("#q-list li[role=option]")
+    page.keyboard.press("ArrowDown")
+    page.keyboard.press("Enter")
+    h1(page, "Solaris")
+    go(page, "insurance")  # drawer: open with click, close with Escape, focus returns
+    row = page.locator("tbody tr.link", has_text=re.compile(r"^\s*D-NL-002"))
+    row.locator("td").first.click()
+    page.wait_for_selector("[role=dialog]")
+    assert "Contract D-NL-002" in page.locator("[role=dialog]").inner_text()
+    page.keyboard.press("Escape")
+    assert page.locator("[role=dialog]").count() == 0
+    go(page, "stress/3")
+    page.get_by_role("button", name="Verify this run").click()
+    page.wait_for_selector(".chip-ok:has-text('result reproduced: yes')")
+    assert page.locator(".chip-bad:has-text('NO')").count() == 0
+    go(page, "data")
+    assert "chain intact" in page.locator("#main").inner_text()
+    assert page.get_by_role("button", name="Run ecb_rates").is_disabled()  # offline: switched off
+    page.get_by_role("button", name="Acknowledge").first.click()
+    page.wait_for_selector(".toast")
+    sync_api.expect(page.get_by_role("button", name="Acknowledge")).to_have_count(
+        1
+    )  # one alert left
+    assert page.problems == []
+    page.context.close()
+
+
+def test_viewer_role_sees_locks_not_errors(browser: Any, server: dict[str, str]) -> None:
+    page = open_page(browser, server["viewer"])
+    page.wait_for_selector(".kpi")
+    settle(page)
+    assert page.locator(".lock").count() >= 1
+    for route in ("exposure", "insurance", "stress", "data"):
+        go(page, route)
+        assert (
+            "Not available for your role" in page.locator("#main").inner_text()
+            or page.locator("#main .lock").count() >= 1
+        ), route
+    go(page, "entities")
+    assert page.locator("tbody tr.link").count() == 15  # what the role may read still works
+    page.context.close()
+
+
+def test_sign_in_screen_and_hostile_fragments(browser: Any, server: dict[str, str]) -> None:
+    page = open_page(browser, server["base"])
+    assert page.locator("#signin").is_visible() and page.locator("#app").is_hidden()
+    page.locator("#token").fill("v1.bad.token.value")
+    page.get_by_role("button", name="Open dashboard").click()
+    sync_api.expect(page.locator("#signin-error")).not_to_be_empty()
+    assert "not accepted" in page.locator("#signin-error").inner_text()
+    page.goto(server["base"] + "#token=<img src=x onerror=alert(1)>")
+    assert page.locator("img").count() == 0 and page.locator("#signin").is_visible()
+    page.context.close()
+
+
+def test_theme_toggle_changes_colours_and_sign_out_wipes_state(
+    browser: Any, server: dict[str, str]
+) -> None:
+    page = open_page(browser, server["admin"], scheme="light")
+    page.wait_for_selector(".kpi")
+    light = page.evaluate("getComputedStyle(document.body).backgroundColor")
+    page.get_by_role("button", name="Theme").click()
+    assert page.evaluate("document.documentElement.dataset.theme") == "dark"
+    assert page.evaluate("getComputedStyle(document.body).backgroundColor") != light
+    page.get_by_role("button", name="Sign out").click()
+    assert page.locator("#signin").is_visible() and page.locator("#token").input_value() == ""
+    page.context.close()

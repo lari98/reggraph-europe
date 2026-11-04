@@ -9,6 +9,8 @@ module also has its own version in `module_versions.json`. Format follows
 Newest first. Written automatically by `python tools/module_manifest.py bump ...`.
 
 <!-- module-log -->
+- **app-shell 0.5.2** (2026-11-03, patch): Release 0.5.2
+- **dashboard 0.3.0** (2026-11-03, minor): Analyst console: seven pages, drill-down, drawers, search, CSV, network graph, roles
 - **app-shell 0.5.1** (2026-11-03, patch): Release 0.5.1: offline setting, reggraph demo, loopback-only serving, low-energy server options
 - **api 0.6.0** (2026-11-03, minor): Dashboard offline flag, notice, icon route; img-src self; create_app accepts prebuilt services
 - **dashboard 0.2.0** (2026-11-03, minor): Colourful SVG dashboard, KPI cards, icon, fragment-token sign-in
@@ -47,6 +49,20 @@ Newest first. Written automatically by `python tools/module_manifest.py bump ...
 - **storage 0.2.0** (2026-11-03, minor): Migration 2: entity_versions and ownership_links with immutability triggers
 - **security 0.2.0** (2026-11-03, minor): Add registry:read and registry:write permissions to the role matrix
 - **registry 0.1.0** (2026-11-03, new): Phase 2: LEI-keyed entities, licences, ownership links, groups, entity-to-rule mapping
+
+## [0.5.2] - Analyst console
+
+### Changed
+
+1. Dashboard rebuilt as a multi-page console: sidebar, global search (press `/`), currency and date
+   controls, light/dark/print, calm professional palette.
+2. Pages: Overview, Entities, Entity (profile, group, exposure, insurance, rules, network, history),
+   Exposure, Insurance, Stress tests (run detail with integrity check), Rules, Data & audit.
+3. Drill-down everywhere: charts, legends, bars and table rows open the underlying records; contracts,
+   rules, scenarios and audit entries open in a detail drawer.
+4. Tables: sort, filter, page, CSV export (spreadsheet-formula safe). Network graph with layer toggles.
+5. Role-aware: sections a role may not read show a lock message instead of an error.
+6. 24 browser tests (contrast, fonts, shapes, five viewports, drill-down, search, drawers, roles, privacy).
 
 ## [0.5.1] - Offline mode, demo and dashboard redesign
 
