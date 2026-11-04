@@ -62,6 +62,7 @@ MODULES: Final[dict[str, tuple[str, ...]]] = {
         "src/reggraph/config.py",
         "src/reggraph/cli.py",
         "src/reggraph/demo.py",
+        "src/reggraph/demo_data.py",
     ),
 }
 _SKIP_PARTS: Final = {"__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache"}

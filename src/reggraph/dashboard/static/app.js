@@ -425,11 +425,11 @@ function geoMap(byJur) {
   const svg = s("svg", { viewBox: "0 0 " + W + " " + H, class: "geomap", role: "group", "aria-label": t("c.map") });
   const place = (code, col, row) => {
     const n = cnt[code] || 0, r = n / max, x = col * STEP, y = row * STEP;
-    const kids = [s("title", {}, code + ": " + t("map.tip", { n: num(n) })),
+    const kids = [s("title", {}, cname(code) + " (" + code + "): " + t("map.tip", { n: num(n) })),
       s("rect", { x, y, width: 46, height: 46, rx: 8, class: "tile-r", "fill-opacity": n ? (0.2 + 0.8 * Math.pow(r, 0.6)).toFixed(2) : "0.08" }),
       s("text", { x: x + 23, y: y + 21, class: "tile-c" + (r > 0.55 ? " on" : "") }, code),
       s("text", { x: x + 23, y: y + 37, class: "tile-n" + (r > 0.55 ? " on" : "") }, n ? String(n) : "·")];
-    svg.append(n ? s("a", { href: "#/entities?jur=" + enc(raw[code]), class: "tile" }, ...kids) : s("g", { class: "tile tile-0" }, ...kids));
+    svg.append(n ? s("a", { href: "#/country/" + enc(raw[code]), class: "tile" }, ...kids) : s("g", { class: "tile tile-0" }, ...kids));
   };
   for (const [code, [c, r]] of Object.entries(GEO)) place(code, c, r);
   extra.forEach((code, i) => place(code, i, 7));
@@ -494,6 +494,90 @@ function crossGrid(edges) {
     h("p", { class: "muted small", text: t("mx.key") }));
 }
 
+// Country names come from the browser's own region list (offline, in the chosen language).
+function cname(code) {
+  try { return new Intl.DisplayNames([S.locale], { type: "region" }).of(geoKey(code)) || code; } catch (e) { return code; }
+}
+const jurOf = (lei) => (S.ents && S.ents.get(lei) ? S.ents.get(lei).jurisdiction : "");
+function sumBy(edges, pick) {
+  const m = {};
+  for (const e of edges) { const k = pick(e); if (k) m[k] = (m[k] || 0) + (Number(e.total) || 0); }
+  return Object.entries(m).sort((p, q) => q[1] - p[1]);
+}
+function moneyBars(rows, href) {
+  const m = Math.max(1, ...rows.map((r) => r[1])), tot = rows.reduce((a, r) => a + r[1], 0) || 1;
+  return rows.length ? bars(rows.slice(0, 6).map((r, i) => ({ name: r[2] || r[0], text: money(r[1]) + " · " + ((r[1] / tot) * 100).toFixed(0) + "%", ratio: r[1] / m, color: i, href: href ? href(r[0]) : undefined })))
+    : h("p", { class: "empty", text: t("r.empty") });
+}
+
+// Line chart of the loss in each stress run, oldest to newest: gross (before insurance) and net (after).
+function trendCard(runs) {
+  if (runs.length < 2) return h("p", { class: "empty", text: t("tr.none") });
+  const W = 640, H = 240, L = 62, R = 16, T = 14, B = 34, max = Math.max(1, ...runs.map((r) => r.gross));
+  const x = (i) => L + (i * (W - L - R)) / (runs.length - 1), y = (v) => T + (H - T - B) * (1 - v / max);
+  const svg = s("svg", { viewBox: "0 0 " + W + " " + H, class: "lines", role: "img", "aria-label": t("c.tr") });
+  for (let k = 0; k <= 4; k++) {
+    const v = (max * k) / 4;
+    svg.append(s("line", { x1: L, x2: W - R, y1: y(v).toFixed(1), y2: y(v).toFixed(1), class: "ln-grid" }), s("text", { x: L - 8, y: (y(v) + 4).toFixed(1), class: "ln-y" }, money(v)));
+  }
+  const every = Math.ceil(runs.length / 12);
+  runs.forEach((r, i) => { if (i % every === 0 || i === runs.length - 1) svg.append(s("text", { x: x(i).toFixed(1), y: H - 12, class: "ln-x" }, "#" + r.id)); });
+  for (const [key, cls] of [["gross", 3], ["net", 2]]) {
+    svg.append(s("path", { d: runs.map((r, i) => (i ? "L" : "M") + x(i).toFixed(1) + " " + y(r[key]).toFixed(1)).join(" "), class: "ln s" + cls }));
+    runs.forEach((r, i) => svg.append(s("a", { href: "#/stress/" + r.id }, s("circle", { cx: x(i).toFixed(1), cy: y(r[key]).toFixed(1), r: r.breaches && key === "net" ? 5.5 : 4, class: "dt s" + cls + (r.breaches && key === "net" ? " dt-bad" : "") },
+      s("title", {}, "#" + r.id + " " + words(r.name) + " · " + t("th.gross") + " " + money(r.gross) + " · " + t("th.net") + " " + money(r.net))))));
+  }
+  const first = runs[0], last = runs[runs.length - 1];
+  return h("div", null, svg, h("div", { class: "pair-key" }, h("span", null, h("i", { class: "sw s3" }), t("th.gross")), h("span", null, h("i", { class: "sw s2" }), t("th.net")), h("span", null, h("i", { class: "sw sw-breach" }), t("tr.breach"))),
+    h("p", { class: "muted small", text: t("tr.an", { a: money(first.net), b: money(last.net), n: runs.length }) }));
+}
+
+// Country page: what the register and the exposure graph say about one country.
+PAGES.country = async (a) => {
+  const code = String(a[0] || "").toUpperCase();
+  if (!/^[A-Z]{2}$/.test(code)) throw new Error("Unknown country");
+  await entities();
+  const ed = await api("/v1/exposures/edges?" + qs());
+  const same = (c) => geoKey(c) === geoKey(code);
+  const ents = [...S.ents.entries()].filter(([, e]) => same(e.jurisdiction));
+  const name = cname(code);
+  if (!ents.length) return h("div", { class: "grid" }, h("div", { class: "span-12" }, pageHead(name, [h("a", { href: "#/overview", text: t("nav.overview") }), " / ", code])), card(name, h("p", { class: "empty", text: t("ct.none") }), "span-12"));
+  const mine = new Set(ents.map(([l]) => l));
+  let lent = 0, owed = 0, cross = 0;
+  const out = {}, inn = {}, lentBy = {}, owedBy = {};
+  for (const e of ed.edges) {
+    const v = Number(e.total) || 0, hj = jurOf(e.holder_lei), cj = jurOf(e.counterparty_lei);
+    if (mine.has(e.holder_lei)) { lent += v; lentBy[e.holder_lei] = (lentBy[e.holder_lei] || 0) + v; if (!same(cj)) cross += v; if (cj) out[cj] = (out[cj] || 0) + v; }
+    if (mine.has(e.counterparty_lei)) { owed += v; owedBy[e.counterparty_lei] = (owedBy[e.counterparty_lei] || 0) + v; if (hj && !same(hj)) inn[hj] = (inn[hj] || 0) + v; }
+  }
+  const types = {};
+  for (const [, e] of ents) types[e.entity_type] = (types[e.entity_type] || 0) + 1;
+  const net = lent - owed, rowsOf = (o) => Object.entries(o).sort((p, q) => q[1] - p[1]).map(([c, v]) => [c, v, cname(c)]);
+  const topOut = rowsOf(out).find(([c]) => !same(c)), best = Object.entries(lentBy).sort((p, q) => q[1] - p[1])[0];
+  const kp = h("div", { class: "kpis kpis-ov n5" },
+    kpiCard("k1", ICON.reg, t("ct.k1"), num(ents.length), t("ct.k1.s", { c: name }), "#/entities?jur=" + enc(code)),
+    kpiCard("k2", ICON.exp, t("ct.k2"), money(lent), t("ct.k2.s"), "#/exposure", money(lent, true)),
+    kpiCard("k3", ICON.ins, t("ct.k3"), money(owed), t("ct.k3.s"), "#/exposure", money(owed, true)),
+    kpiCard("k4", ICON.str, t("ct.k4"), (net >= 0 ? "+" : "−") + money(Math.abs(net)), t("ct.k4.s"), "#/exposure", money(net, true)),
+    kpiCard("k5", ICON.alr, t("ct.k5"), lent ? ((cross / lent) * 100).toFixed(0) + "%" : "-", t("ct.k5.s"), "#/exposure"));
+  const lines = [{ tone: "ok", text: t("ct.an1", { n: ents.length, c: name, lent: money(lent), owed: money(owed) }) }];
+  if (lent && topOut) lines.push({ tone: cross / lent > 0.6 ? "warn" : "ok", text: t("ct.an2", { p: ((cross / lent) * 100).toFixed(0), top: topOut[2] }) });
+  if (best) lines.push({ tone: "ok", text: t("ct.an3", { name: nm(best[0]), share: ((best[1] / lent) * 100).toFixed(0) }) });
+  const listRows = ents.map(([lei, e]) => ({ lei, ...e, lent: lentBy[lei] || 0, owed: owedBy[lei] || 0 }));
+  const g = h("div", { class: "grid ov" });
+  g.append(h("div", { class: "span-12" }, pageHead(name, [h("a", { href: "#/overview", text: t("nav.overview") }), " / ", code],
+    h("div", { class: "chips" }, chip(code, "info"), h("button", { type: "button", class: "btn print-btn", text: t("print"), onclick: () => window.print() })))));
+  g.append(h("div", { class: "span-12" }, kp));
+  g.append(card(t("c.an"), h("ul", { class: "an" }, lines.map((l) => h("li", { class: "an-" + l.tone }, h("span", { class: "dot" }), h("span", { text: l.text })))), "an-card span-12", null, t("c.an.s")));
+  g.append(card(t("ct.types"), donut(Object.entries(types).sort((p, q) => q[1] - p[1]), ents.length, (k) => "#/entities?jur=" + enc(code) + "&type=" + enc(k)), "span-4"));
+  g.append(card(t("ct.out"), moneyBars(rowsOf(out), (c) => "#/country/" + enc(c)), "span-4", null, t("ct.out.s")));
+  g.append(card(t("ct.in"), moneyBars(rowsOf(inn), (c) => "#/country/" + enc(c)), "span-4", null, t("ct.in.s")));
+  g.append(card(t("ct.list", { c: name }), table({ cols: [{ title: t("th.name"), get: (r) => r.legal_name }, { title: t("th.type"), get: (r) => r.entity_type, render: (r) => chip(word(r.entity_type), "info") }, { title: t("th.ccy"), get: (r) => r.reporting_currency },
+    { title: t("th.lent"), num: true, get: (r) => r.lent, render: (r) => money(r.lent) }, { title: t("th.owed"), num: true, get: (r) => r.owed, render: (r) => money(r.owed) }],
+  rows: listRows, href: (r) => "#/entity/" + enc(r.lei), csv: "country-" + code, pageSize: 10 }), "span-12", null, t("ct.list.s")));
+  return g;
+};
+
 // Overview: written for someone who has never seen the platform. Top to bottom: one sentence on how
 // things stand, what needs attention, six headline numbers with a plain-language line each, a
 // one-minute guide, then the pictures. Every box links to the detail behind it.
@@ -524,7 +608,8 @@ PAGES.overview = async () => {
   const hero = h("section", { class: "hero hero-" + level, "aria-labelledby": "ov-h" },
     h("div", { class: "hero-main" },
       h("div", { class: "chips" }, h("span", { class: "status status-" + level }, h("span", { class: "dot" }), t("ov.h." + level)),
-        chip(dash.view, "info"), chip(dash.as_of, "neutral"), chip(dash.currency, "neutral")),
+        chip(dash.view, "info"), chip(dash.as_of, "neutral"), chip(dash.currency, "neutral"),
+        h("button", { type: "button", class: "btn print-btn", text: t("print"), title: t("print.t"), onclick: () => window.print() })),
       h("h1", { id: "ov-h", text: t("ov.title") }),
       h("p", { class: "hero-sentence", text: level === "ok" ? t("ov.s.ok") : t("ov.s." + level, { n: items.length }) }),
       facts ? h("p", { class: "muted hero-facts", text: facts }) : null,
@@ -565,20 +650,27 @@ PAGES.overview = async () => {
 
   const guide = h("details", { class: "guide card" }, h("summary", null, h("span", { class: "guide-ic", "aria-hidden": "true", text: "?" }), h("span", { text: t("guide.t") })),
     h("div", { class: "guide-grid" }, [1, 2, 3, 4, 5].map((i) => h("div", { class: "g" }, h("strong", { text: t("g." + i + "t") }), h("p", { text: t("g." + i + "d") })))),
-    h("p", { class: "muted guide-note", text: t("guide.note") }));
+    h("p", { class: "muted guide-note", text: t("guide.units") }), h("p", { class: "muted guide-note", text: t("guide.note") }));
 
   const g = h("div", { class: "grid" });
   if (ok("registry")) {
     g.append(card(t("c.types"), donut(Object.entries(sec.registry.by_type).sort((a, b) => b[1] - a[1]), sec.registry.entities, (x) => "#/entities?type=" + enc(x)), "span-4", null, t("c.types.s")));
     const j = Object.entries(sec.registry.by_jurisdiction).sort((a, b) => b[1] - a[1]);
-    g.append(card(t("c.jur"), bars(j.slice(0, 6).map(([c, n], i) => ({ name: c, text: String(n), ratio: n / j[0][1], href: "#/entities?jur=" + enc(c), color: i }))), "span-4", null, t("c.jur.s")));
+    g.append(card(t("c.jur"), bars(j.slice(0, 6).map(([c, n], i) => ({ name: c, text: String(n), ratio: n / j[0][1], href: "#/country/" + enc(c), color: i }))), "span-4", null, t("c.jur.s")));
   }
   if (ok("insurance")) g.append(card(t("c.line"), donut(Object.entries(sec.insurance.by_line).sort((a, b) => b[1] - a[1]), sec.insurance.contracts, (x) => "#/insurance?line=" + enc(x)), "span-4", null, t("c.line.s")));
   if (ok("exposure")) {
     const m = Math.max(1, ...top.map((r) => Number(r.amount)));
     if (ok("registry")) g.append(card(t("c.map"), geoMap(sec.registry.by_jurisdiction), "span-7", null, t("c.map.s")));
     if (top.length) g.append(card(t("c.conc"), h("div", null, gauge(hhi), h("p", { class: "muted small", text: t("c.conc.d") })), "span-5", null, t("c.conc.s")));
-    g.append(lazy(t("c.net"), () => edgesP, (d) => network({ nodes: Object.fromEntries([...new Set(d.edges.flatMap((e) => [e.holder_lei, e.counterparty_lei]))].map((x) => [x, 1])), edges: d.edges }, { circle: true }), { class: "span-8", sub: t("c.net.s") }));
+    g.append(lazy(t("c.net"), () => edgesP, (d) => {
+      // with many institutions a full graph is a hairball: draw the biggest ones and say so
+      const vol = {};
+      for (const e of d.edges) for (const k of [e.holder_lei, e.counterparty_lei]) vol[k] = (vol[k] || 0) + (Number(e.total) || 0);
+      const keep = new Set(Object.keys(vol).sort((p, q) => vol[q] - vol[p]).slice(0, 18));
+      const edges = d.edges.filter((e) => keep.has(e.holder_lei) && keep.has(e.counterparty_lei));
+      return h("div", null, network({ nodes: Object.fromEntries([...keep].map((k) => [k, 1])), edges }, { circle: true }), Object.keys(vol).length > keep.size ? h("p", { class: "muted small", text: t("net.top", { n: keep.size, m: Object.keys(vol).length }) }) : null);
+    }, { class: "span-8", sub: t("c.net.s") }));
     g.append(card(t("c.top"), bars(top.map((r, i) => ({ name: r.name || r.lei, text: money(r.amount) + " · " + Number(r.share_percent).toFixed(1) + "%", ratio: Number(r.amount) / m, href: "#/entity/" + enc(r.lei) + "/exposure", color: i }))), "span-4", null, t("c.top.s")));
   }
   if (ok("exposure")) g.append(lazy(t("c.mx"), () => edgesP, (d) => crossGrid(d.edges), { class: "span-7", sub: t("c.mx.s") }));
@@ -590,10 +682,7 @@ PAGES.overview = async () => {
   }
   if (ok("exposure")) {
     // more pictures from the same two data sets: who is owed, who owes, how a loss shrinks, key ratios
-    const sumBy = (edges, pick) => { const m = {}; for (const e of edges) { const k = pick(e); if (k) m[k] = (m[k] || 0) + (Number(e.total) || 0); } return Object.entries(m).sort((p, q) => q[1] - p[1]); };
-    const moneyBars = (rows, href) => { const m = Math.max(1, ...rows.map((r) => r[1])), tot = rows.reduce((a, r) => a + r[1], 0) || 1;
-      return rows.length ? bars(rows.slice(0, 6).map((r, i) => ({ name: r[2] || r[0], text: money(r[1]) + " · " + ((r[1] / tot) * 100).toFixed(0) + "%", ratio: r[1] / m, color: i, href: href ? href(r[0]) : undefined }))) : h("p", { class: "empty", text: t("r.empty") }); };
-    g.append(lazy(t("c.bc"), () => edgesP, (d) => moneyBars(sumBy(d.edges, (e) => (S.ents.get(e.holder_lei) || {}).jurisdiction), (c) => "#/entities?jur=" + enc(c)), { class: "span-4", sub: t("c.bc.s") }));
+    g.append(lazy(t("c.bc"), () => edgesP, (d) => moneyBars(sumBy(d.edges, (e) => (S.ents.get(e.holder_lei) || {}).jurisdiction), (c) => "#/country/" + enc(c)), { class: "span-4", sub: t("c.bc.s") }));
     g.append(lazy(t("c.bt"), () => edgesP, (d) => moneyBars(sumBy(d.edges, (e) => typeOf(e.counterparty_lei)).map((r) => [r[0], r[1], word(r[0])]), (k) => "#/entities?type=" + enc(k)), { class: "span-4", sub: t("c.bt.s") }));
     g.append(lazy(t("c.lend"), () => edgesP, (d) => moneyBars(sumBy(d.edges, (e) => e.holder_lei).map((r) => [r[0], r[1], nm(r[0])]), (l) => "#/entity/" + enc(l) + "/exposure"), { class: "span-4", sub: t("c.lend.s") }));
     g.append(lazy(t("c.wf"), () => runP, (d) => {
@@ -623,13 +712,14 @@ PAGES.overview = async () => {
       ok("connectors") ? chip(t("r.alerts", { n: alerts }), alerts ? "warn" : "ok") : null),
     h("p", { class: "muted links" }, h("a", { href: "#/rules", text: t("r.lib") }), "  |  ", h("a", { href: "#/data", text: t("r.data") }))), "span-5", null, t("c.rul.s")));
   }
+  if (ok("stress")) g.append(card(t("c.tr"), trendCard([...runs0].reverse().map((r) => ({ id: r.run_id, name: r.scenario_key, gross: Number(r.gross_loss), net: Number(r.net_loss), breaches: r.breaches }))), "span-12", null, t("c.tr.s")));
   if (ok("stress") && runs0.length) g.append(lazy(t("c.buf"), () => runP, (d) => {
     const hs = d.result.holders.filter((x) => Number(x.capital_buffer) > 0).sort((a, b) => Number(b.net_loss_ratio) - Number(a.net_loss_ratio)).slice(0, 6);
     return hs.length ? pairBars(hs.map((x) => ({ name: nm(x.holder_lei), a: Number(x.net_loss), b: Number(x.capital_buffer), aText: moneyIn(x.net_loss, d.result.currency), bText: moneyIn(x.capital_buffer, d.result.currency),
       flag: x.breach ? t("st.breach", { n: 1 }) : "", href: "#/entity/" + enc(x.holder_lei) })), t("buf.loss"), t("buf.cap"), 4, 2) : h("p", { class: "empty", text: t("buf.none") });
   }, { class: "span-12", sub: t("c.buf.s") }));
   for (const k of dash.omitted) g.append(card(label(k, k), h("p", { class: "lock", text: t("unavail") }), "span-4"));
-  return h("div", { class: "grid ov" }, h("div", { class: "span-12" }, hero), h("div", { class: "span-12" }, kp), h("div", { class: "span-12" }, analysis), h("div", { class: "span-12" }, guide), [...g.children]);
+  return h("div", { class: "grid ov" }, h("div", { class: "span-12 print-only print-head" }, h("strong", { text: t("print.head") }), " · " + [dash.as_of, dash.currency, S.dash.labels["notice.decision_support"] || ""].join(" · ")), h("div", { class: "span-12" }, hero), h("div", { class: "span-12" }, kp), h("div", { class: "span-12" }, analysis), h("div", { class: "span-12" }, guide), [...g.children]);
 };
 
 PAGES.entities = async (_a, q) => {
@@ -785,6 +875,7 @@ PAGES.stress = async (a) => {
   const details = await Promise.all(runs.slice(0, 20).map((r) => api("/v1/stress/runs/" + r.run_id).catch(() => null)));
   const rows = runs.map((r, i) => ({ ...r, tot: details[i] ? details[i].result.totals : null }));
   return h("div", { class: "grid" }, h("div", { class: "span-12" }, pageHead(label("stress", "Stress tests"), null, chip(runs.length + " runs", "info"))),
+    card(t("c.tr"), trendCard(rows.filter((r) => r.tot).slice(0, 12).reverse().map((r) => ({ id: r.run_id, name: r.scenario_key, gross: Number(r.tot.gross_loss), net: Number(r.tot.net_loss), breaches: r.tot.breaches }))), "span-12", null, t("c.tr.s")),
     card("Scenarios", table({ cols: [{ title: "Scenario", get: (r) => r.scenario_key }, { title: "Title", get: (r) => r.scenario.title }, { title: "Version", num: true, get: (r) => r.version_no },
       { title: "Shocks", get: (r) => r.scenario.shocks.map((x) => x.kind).join(", ") }, { title: "Insurance", get: (r) => (r.scenario.use_insurance ? "applied" : "ignored") }], rows: scen, search: false, pageSize: 6,
     open: (r) => drawer("Scenario " + r.scenario_key, Promise.resolve(h("div", null, kv([["Title", r.scenario.title], ["Description", r.scenario.description], ["Version", r.version_no], ["Insurance", r.scenario.use_insurance ? "recoveries applied" : "ignored"], ["Hash", short(r.content_hash)]]),
@@ -839,6 +930,36 @@ PAGES.rules = async () => {
 PAGES.data = async () => {
   const g = h("div", { class: "grid" });
   g.append(h("div", { class: "span-12" }, pageHead("Data & audit", null, S.offline ? chip("offline: connectors are off", "warn") : null)));
+  const auditP = api("/v1/audit?limit=500"), verP = api("/v1/audit/verify"), alertsP = api("/v1/source-alerts?limit=200"), runsP = api("/v1/connectors/runs?limit=50");
+  const dashP = api(dashPath());
+  g.append(card("What this page shows", h("div", { class: "explain" },
+    h("p", null, h("strong", { text: "Audit trail. " }), "A diary the platform cannot rewrite: every change (a rule approved, a stress test run, data loaded) is stored with who did it and when. Each entry carries a fingerprint (hash) of the entry before it, so changing history later would break the chain and be noticed."),
+    h("p", null, h("strong", { text: "Source alerts. " }), "Changes spotted in official sources such as EUR-Lex that someone should read and acknowledge."),
+    h("p", null, h("strong", { text: "Connectors. " }), "Programs that fetch official data (ECB exchange rates, EUR-Lex). They are switched off in offline mode, so nothing leaves this computer.")), "span-12"));
+  const kp = h("div", { class: "kpis kpis-ov n5" });
+  Promise.allSettled([auditP, verP, alertsP, runsP, dashP]).then(([au, ve, al, ru, da]) => {
+    if (ve.status === "fulfilled") {
+      kp.append(kpiCard("k1", ICON.rul, "Audit entries", num(ve.value.entries), "Actions recorded so far", "#/data"), kpiCard("k3", ICON.ins, "Chain check", ve.value.ok ? "Intact" : "BROKEN", ve.value.ok ? "No entry was changed after the fact" : "Entry #" + ve.value.first_bad + " was altered", "#/data"));
+    }
+    if (al.status === "fulfilled") kp.append(kpiCard("k6", ICON.alr, "Open alerts", num(al.value.filter((r) => r.status === "open").length), num(al.value.length) + " alerts in total", "#/data"));
+    if (ru.status === "fulfilled") kp.append(kpiCard("k4", ICON.str, "Connector runs", num(ru.value.length), S.offline ? "Offline: connectors are off" : "Fetches of official data", "#/data"));
+    if (da.status === "fulfilled" && da.value.sections.rates && !da.value.sections.rates.error) kp.append(kpiCard("k2", ICON.exp, "FX rates on file", num(da.value.sections.rates.currencies), "Latest day: " + (da.value.sections.rates.latest_date || "-"), "#/data"));
+    kp.classList.add("n" + Math.max(1, kp.children.length));
+  });
+  g.append(h("div", { class: "span-12" }, kp));
+  g.append(lazy("The hash chain, latest entries", () => auditP, (d) => {
+    const last = d.slice(-6);
+    if (!last.length) return h("p", { class: "empty", text: "No entries yet." });
+    return h("div", { class: "chain-wrap" }, h("ol", { class: "chain" }, last.map((r, i) => h("li", { class: "link-blk" }, h("div", { class: "blk" }, h("strong", { text: "#" + r.n }), h("span", { class: "act", text: r.action }), h("span", { class: "mono", title: r.entry_hash, text: String(r.entry_hash).slice(0, 8) }),
+      h("span", { class: "muted small", text: "← " + String(r.prev_hash).slice(0, 8) })), i < last.length - 1 ? h("span", { class: "arrow", "aria-hidden": "true", text: "→" }) : null))),
+      h("p", { class: "muted small", text: "Each block shows its own fingerprint and, after the arrow, the fingerprint of the block before it. They must match, link by link." }));
+  }, { class: "span-12", sub: "Newest on the right" }));
+  const tally = (rows, pick) => { const m = {}; for (const r of rows) { const k = pick(r); m[k] = (m[k] || 0) + 1; } return Object.entries(m).sort((p, q) => q[1] - p[1]); };
+  g.append(lazy("Activity by area", () => auditP, (d) => donut(tally(d, (r) => String(r.action).split(".")[0]), d.length), { class: "span-4", sub: "What kind of change was recorded" }));
+  g.append(lazy("Most active people and systems", () => auditP, (d) => { const rows = tally(d, (r) => r.actor).slice(0, 6); return bars(rows.map(([k, n], i) => ({ name: k, text: String(n), ratio: n / rows[0][1], color: i }))); }, { class: "span-4", sub: "Who made the changes" }));
+  g.append(lazy("Most common actions", () => auditP, (d) => { const rows = tally(d, (r) => r.action).slice(0, 7); return bars(rows.map(([k, n], i) => ({ name: k, text: String(n), ratio: n / rows[0][1], color: i }))); }, { class: "span-4", sub: "What happens most" }));
+  g.append(lazy("Activity by day", () => auditP, (d) => { const rows = tally(d, (r) => String(r.ts).slice(0, 10)).sort((p, q) => (p[0] < q[0] ? 1 : -1)).slice(0, 7); return bars(rows.map(([k, n], i) => ({ name: k, text: String(n), ratio: n / Math.max(...rows.map((r) => r[1])), color: i }))); }, { class: "span-6", sub: "Entries per day, last seven days with activity" }));
+  g.append(lazy("Alerts by status and source", () => alertsP, (d) => h("div", null, donut(tally(d, (r) => r.status), d.length), h("div", { class: "chips" }, tally(d, (r) => r.source).map(([k, n]) => chip(k + " " + n, "info")))), { class: "span-6", sub: "Open alerts need a person to read and acknowledge them" }));
   g.append(lazy("Audit chain", () => api("/v1/audit/verify"), (v) => h("div", null, h("div", { class: "chips" }, chip(v.ok ? "chain intact" : "CHAIN BROKEN at #" + v.first_bad, v.ok ? "ok" : "bad"), chip(v.entries + " entries", "info")),
     h("p", { class: "muted" }, "Head ", short(v.head.hash || "-"), "  (every entry contains the hash of the one before it; any edit breaks the chain)")), { class: "span-6" }));
   g.append(lazy("Source connectors", () => api("/v1/connectors/runs?limit=50"), (runs) => {

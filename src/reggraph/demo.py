@@ -90,8 +90,11 @@ _POSITIONS = (
 _RATES = {"USD": "1.1600", "CHF": "0.9300", "PLN": "4.2500", "GBP": "0.8700", "SGD": "1.5000"}
 
 
-def seed(services: Services) -> dict[str, Principal]:
-    """Fill an empty database with invented data. Returns one principal per demo role."""
+def seed(services: Services, *, rich: bool = False) -> dict[str, Principal]:
+    """Fill an empty database with invented data. Returns one principal per demo role.
+
+    ``rich=True`` adds the large realistic set from :mod:`reggraph.demo_data`.
+    Tests use the small set."""
     today = services.clock.now().date()
     people = {
         "admin": Principal("demo.admin", TENANT, frozenset({Role.TENANT_ADMIN})),
@@ -258,6 +261,10 @@ def seed(services: Services) -> dict[str, Principal]:
             " published, status, created_at) VALUES (?, ?, 'eurlex', ?, ?, ?, NULL, 'open', ?)",
             (TENANT, n, f"demo:{n}", title, "https://eur-lex.europa.eu/", now),
         )
+    if rich:
+        from reggraph.demo_data import extend
+
+        extend(services, people, dict(L), today)
     return people
 
 
@@ -350,7 +357,7 @@ def run_demo(host: str, port: int, role: str, open_browser: bool) -> int:
         rate_per_minute=600,
     )
     services = build_services(settings, SystemClock())
-    people = seed(services)
+    people = seed(services, rich=True)
     who = people[role]
     token = services.signer.issue(who, ttl_seconds=TOKEN_HOURS * 3600)
     app = create_app(settings, SystemClock(), services=services)

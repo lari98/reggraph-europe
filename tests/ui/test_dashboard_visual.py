@@ -263,7 +263,7 @@ def test_overview_pictures_map_gauge_grid_and_bars(
     # map: one tile per country, populated tiles link to the register filtered by that country
     assert page.locator("svg.geomap .tile-r").count() >= 30
     link = page.locator("svg.geomap a.tile").first
-    assert "#/entities?jur=" in (link.get_attribute("href") or "")
+    assert "#/country/" in (link.get_attribute("href") or "")
     # gauge, grid and paired bars are drawn; analysis has several readable sentences
     assert page.locator("svg.gauge .needle").count() == 1
     assert page.locator("svg.xgrid rect").count() >= 4
@@ -292,8 +292,7 @@ def test_overview_pictures_map_gauge_grid_and_bars(
     assert over == 0
     # clicking a country opens the register filtered to it
     link.click()
-    _wait(page, "location.hash.startsWith('#/entities')", "entities page")
-    assert "jur=" in page.evaluate("location.hash")
+    _wait(page, "location.hash.startsWith('#/country/')", "country page")
     page.context.close()
 
 
@@ -308,6 +307,44 @@ def test_overview_pictures_are_translated_and_phone_safe(
     assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
     assert "Wo die Institute sitzen" in page.inner_text(".ov")
     assert "Was das bedeutet" in page.inner_text(".an-card")
+    page.context.close()
+
+
+def test_country_page_print_view_and_data_page(browser: Any, server: dict[str, str]) -> None:
+    """0.8.0: per-country page, trend chart, print layout and the richer Data & audit page."""
+    page = open_page(browser, server["admin"], size=(1440, 900))
+    page.wait_for_selector(".kpi")
+    settle(page)
+    go(page, "country/DE")
+    h1(page, "Germany")
+    assert page.locator(".kpis-ov .kpi").count() == 5
+    assert page.locator(".an li").count() >= 2 and page.locator("tbody tr.link").count() >= 1
+    assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
+    go(page, "country/ZZ")  # a country without institutions: friendly empty state, no crash
+    assert "No institutions are registered" in page.locator("#main").inner_text()
+    go(page, "country/not-a-country")  # hostile input is refused, not rendered
+    assert page.locator("#main .err").count() == 1
+    # trend chart on the stress page (needs two runs; the demo server has three)
+    go(page, "stress")
+    page.wait_for_selector("svg.lines")
+    assert page.locator("svg.lines path.ln").count() == 2
+    assert page.locator("svg.lines circle.dt").count() >= 4
+    # richer Data & audit page
+    go(page, "data")
+    page.wait_for_selector(".chain .blk")
+    assert page.locator(".chain .blk").count() >= 3
+    assert page.locator(".kpis-ov .kpi").count() >= 4
+    assert "Intact" in page.locator("#main").inner_text()
+    assert page.problems == []
+    # print layout: chrome hidden, cards kept, header line shown
+    go(page, "overview")
+    page.wait_for_selector(".hero")
+    page.emulate_media(media="print")
+    assert page.locator(".side").is_hidden() and page.locator(".bar").is_hidden()
+    assert page.locator(".print-head").is_visible()
+    assert page.locator(".print-btn").first.is_hidden()
+    page.emulate_media(media="screen")
+    assert page.locator(".side").is_visible() and page.locator(".print-head").is_hidden()
     page.context.close()
 
 

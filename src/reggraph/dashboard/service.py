@@ -33,7 +33,7 @@ from reggraph.security.rbac import Permission, Principal, Role
 from reggraph.storage import Db
 
 TOP_COUNTERPARTIES: Final = 5
-RECENT_RUNS: Final = 5
+RECENT_RUNS: Final = 12
 
 _VIEW_BY_ROLE: Final = (
     (Role.TENANT_ADMIN, "administration"),

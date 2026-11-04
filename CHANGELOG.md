@@ -9,6 +9,8 @@ module also has its own version in `module_versions.json`. Format follows
 Newest first. Written automatically by `python tools/module_manifest.py bump ...`.
 
 <!-- module-log -->
+- **app-shell 0.8.0** (2026-11-04, minor): Release 0.8.0: large realistic demo data set (DACH-weighted, invented), seeded and repeatable
+- **dashboard 0.7.0** (2026-11-04, minor): Country detail pages, loss trend chart, print/PDF view, richer Data & audit page, network limited to biggest institutions, units note
 - **dashboard 0.6.1** (2026-11-04, patch): Overview: five more cards (lender country, borrower type, lenders, exposure-to-loss, key ratios)
 - **app-shell 0.7.0** (2026-11-04, minor): Release 0.7.0: richer stakeholder Overview
 - **dashboard 0.6.0** (2026-11-04, minor): Overview 0.7.0: offline Europe tile map, concentration gauge, country-to-country grid, gross vs net and capital-buffer bars, rules donut, plain-language analysis
@@ -60,6 +62,16 @@ Newest first. Written automatically by `python tools/module_manifest.py bump ...
 - **storage 0.2.0** (2026-11-03, minor): Migration 2: entity_versions and ownership_links with immutability triggers
 - **security 0.2.0** (2026-11-03, minor): Add registry:read and registry:write permissions to the role matrix
 - **registry 0.1.0** (2026-11-03, new): Phase 2: LEI-keyed entities, licences, ownership links, groups, entity-to-rule mapping
+
+## [0.8.0] - Realistic demo data, country pages, trend and print view
+
+- **Demo data**: `reggraph demo` now loads a large invented data set on top of the small core one: about 76 institutions weighted to Germany, Austria and Switzerland (plus 14 other countries), around 300 exposures, 45 insurance contracts, ownership groups, 13 stress runs and 6 source alerts. Every name carries "(demo)"; figures come from a seeded generator, so the picture is the same on every start. Tests keep using the small set (`seed(services)`); `seed(services, rich=True)` adds the large one.
+- **Country pages** (`#/country/DE`): institutions, money lent and borrowed, net position, cross-border share, types, partner countries and a plain-language reading. The Overview map and country bars now open them.
+- **Loss trend**: gross and net loss across stress runs as a line chart on the Overview and the Stress tests page; a run with a capital shortfall is marked.
+- **Print / PDF**: a Print button on the Overview and country pages; the print layout hides the menu and header and keeps every card and chart.
+- **Data & audit** page: plain-language explanation, key numbers, a visual hash chain, activity by area, person, action and day, alert breakdown.
+- Overview: the network graph shows the 18 biggest institutions when there are many; a units note explains "Mrd." (billion) and "Mio." (million).
+- Dashboard payload lists the 12 latest stress runs instead of 5.
 
 ## [0.7.0] - Stakeholder Overview with maps and analysis
 

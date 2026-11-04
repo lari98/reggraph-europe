@@ -370,3 +370,34 @@ a.tile:hover .tile-r, a.tile:focus-visible .tile-r { stroke: var(--ink); stroke-
 .an .dot { flex: none; width: 10px; height: 10px; border-radius: 50%; margin-top: 5px; background: var(--ok); }
 .an-warn .dot { background: var(--c3); } .an-bad .dot { background: var(--bad); }
 @media (prefers-reduced-motion: no-preference) { .pr .fill { transition: width .5s ease; } }
+
+/* ---- 0.7.x: trend lines, country page, Data & audit, print view ---- */
+.lines { width: 100%; height: auto; display: block; max-height: 300px; }
+.lines text { font-family: var(--font); fill: var(--muted); font-size: 11px; }
+.ln-y { text-anchor: end; } .ln-x { text-anchor: middle; }
+.ln-grid { stroke: var(--line); stroke-width: 1; }
+.ln { fill: none; stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+.dt { fill: var(--card); stroke-width: 2.5; }
+.dt-bad { fill: var(--bad); stroke: var(--bad); }
+.lines a:hover .dt, .lines a:focus-visible .dt { stroke-width: 4; }
+.sw-breach { background: var(--bad); border-radius: 50% !important; }
+.explain { display: grid; gap: 8px; font-size: 14px; line-height: 1.5; max-width: 90ch; } .explain p { margin: 0; }
+.chain-wrap { display: grid; gap: 8px; } .chain { list-style: none; margin: 0; padding: 0 0 6px; display: flex; gap: 6px; align-items: center; overflow-x: auto; }
+.link-blk { display: flex; align-items: center; gap: 6px; flex: none; }
+.blk { display: grid; gap: 3px; min-width: 150px; padding: 10px 12px; border: 1px solid var(--line-strong); border-radius: 10px; background: var(--bg); border-top: 3px solid var(--c2); }
+.blk .act { font-size: 12px; color: var(--muted); overflow-wrap: anywhere; } .blk .mono { font-size: 12px; }
+.arrow { color: var(--muted); font-weight: 800; }
+.print-only { display: none; }
+.print-btn { margin-left: auto; }
+@media print {
+  @page { size: A4 landscape; margin: 12mm; }
+  html, body { background: #fff !important; color: #000; }
+  .side, .bar, .skip, .toasts, .scrim, .drawer, .print-btn, .live, .guide, .foot .build, #notice:empty { display: none !important; }
+  .app { display: block !important; } .col { display: block !important; }
+  main { padding: 0 !important; }
+  .print-only { display: block !important; font-size: 12px; padding-bottom: 6px; border-bottom: 1px solid #999; }
+  .grid { gap: 10px !important; } .card, .kpi, .hero { break-inside: avoid; box-shadow: none !important; border-color: #bbb !important; }
+  .span-8, .span-7, .span-5, .span-4 { grid-column: span 6 !important; } .span-12 { grid-column: span 12 !important; }
+  svg, .fill, .seg, .sw, .chip, .dot, .status { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  a { color: inherit; text-decoration: none; }
+}
