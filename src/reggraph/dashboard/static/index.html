@@ -33,20 +33,53 @@
   <div class="col">
     <header class="bar">
       <div class="search" role="search">
+        <svg class="search-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
         <label class="sr-only" for="q">Search entities</label>
-        <input id="q" type="search" placeholder="Search company or LEI   ( / )" autocomplete="off"
+        <input id="q" type="search" placeholder="Search companies or LEI" autocomplete="off"
           role="combobox" aria-expanded="false" aria-controls="q-list" aria-autocomplete="list">
+        <kbd class="kbd" aria-hidden="true">/</kbd>
         <ul id="q-list" class="q-list" role="listbox" hidden></ul>
       </div>
-      <label class="ctl"><span>Currency</span>
-        <input id="currency" value="EUR" maxlength="3" size="4" pattern="[A-Za-z]{3}"></label>
-      <label class="ctl"><span>As of</span><input id="asof" type="date"></label>
-      <button type="button" class="btn" id="refresh" title="Reload data">Refresh</button>
-      <button type="button" class="btn" id="theme" title="Switch light / dark">Theme</button>
-      <button type="button" class="btn" id="print" title="Print or save as PDF">Print</button>
-      <button type="button" class="btn" id="signout">Sign out</button>
+      <div class="bar-right">
+        <div class="pop-wrap">
+          <button type="button" id="ccy-btn" class="pill" aria-haspopup="listbox" aria-expanded="false" aria-controls="ccy-pop">
+            <span class="pill-k">Currency</span><strong id="ccy-label">EUR</strong>
+            <svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+          <div id="ccy-pop" class="pop" hidden>
+            <label class="sr-only" for="ccy-q">Search currencies</label>
+            <input id="ccy-q" type="search" placeholder="Search currency" autocomplete="off" aria-label="Search currencies">
+            <ul id="ccy-list" class="opt-list" role="listbox" aria-label="Currencies"></ul>
+            <p class="pop-note">Amounts are converted with the FX rates on file for the chosen day.</p>
+          </div>
+        </div>
+        <div class="pop-wrap">
+          <button type="button" id="date-btn" class="pill" aria-haspopup="dialog" aria-expanded="false" aria-controls="date-pop">
+            <span class="pill-k">Data as of</span><strong id="date-label">Today</strong>
+            <svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+          <div id="date-pop" class="pop" role="dialog" aria-label="Choose the reporting day" hidden>
+            <p class="pop-note first">Show the data as it stood on a past day: positions, FX rates and rules in force then.</p>
+            <div id="date-presets" class="opt-list"></div>
+            <label class="date-pick"><span>Pick any day</span><input id="asof" type="date"></label>
+          </div>
+        </div>
+        <button type="button" id="refresh" class="icon-btn" aria-label="Reload data" title="Reload data">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.5-5.8M20 4v5h-5"/></svg></button>
+        <button type="button" id="theme" class="theme" role="switch" aria-checked="true" aria-label="Light theme" title="Light / dark">
+          <span class="theme-knob">
+            <svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5.3 5.3L7 7M17 17l1.7 1.7M18.7 5.3L17 7M7 17l-1.7 1.7"/></svg>
+            <svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 13.2A8.6 8.6 0 1 1 10.8 3.5a6.9 6.9 0 0 0 9.7 9.7z"/></svg>
+          </span></button>
+        <div class="pop-wrap">
+          <button type="button" id="user-btn" class="avatar" aria-haspopup="menu" aria-expanded="false" aria-controls="user-pop" aria-label="Account menu"><span id="avatar-text">RG</span></button>
+          <div id="user-pop" class="pop pop-right" role="menu" aria-label="Account" hidden>
+            <p class="pop-note first" id="user-name"></p>
+            <button type="button" id="print" class="menu-item" role="menuitem">Print or save as PDF</button>
+            <button type="button" id="signout" class="menu-item" role="menuitem">Sign out</button>
+          </div>
+        </div>
+      </div>
     </header>
-    <p id="status" class="status" role="status" aria-live="polite"></p>
+    <p id="status" class="sr-only" role="status" aria-live="polite"></p>
     <main id="main" tabindex="-1"></main>
     <footer id="notice" class="foot"></footer>
   </div>

@@ -296,7 +296,7 @@ def test_table_sorting_filtering_paging_and_csv(browser: Any, server: dict[str, 
 def test_search_drawer_verify_and_acknowledge(browser: Any, server: dict[str, str]) -> None:
     page = open_page(browser, server["admin"])
     page.wait_for_selector(".kpi")
-    page.keyboard.press("/")  # keyboard shortcut focuses the search box
+    page.keyboard.press("Control+k")  # keyboard shortcut focuses the search box
     assert page.evaluate("document.activeElement.id") == "q"
     page.keyboard.type("solaris")
     page.wait_for_selector("#q-list li[role=option]")
@@ -306,10 +306,10 @@ def test_search_drawer_verify_and_acknowledge(browser: Any, server: dict[str, st
     go(page, "insurance")  # drawer: open with click, close with Escape, focus returns
     row = page.locator("tbody tr.link", has_text=re.compile(r"^\s*D-NL-002"))
     row.locator("td").first.click()
-    page.wait_for_selector("[role=dialog]")
-    assert "Contract D-NL-002" in page.locator("[role=dialog]").inner_text()
+    page.wait_for_selector(".drawer")
+    assert "Contract D-NL-002" in page.locator(".drawer").inner_text()
     page.keyboard.press("Escape")
-    assert page.locator("[role=dialog]").count() == 0
+    assert page.locator(".drawer").count() == 0
     go(page, "stress/3")
     page.get_by_role("button", name="Verify this run").click()
     page.wait_for_selector(".chip-ok:has-text('result reproduced: yes')")
@@ -354,15 +354,73 @@ def test_sign_in_screen_and_hostile_fragments(browser: Any, server: dict[str, st
     page.context.close()
 
 
-def test_theme_toggle_changes_colours_and_sign_out_wipes_state(
-    browser: Any, server: dict[str, str]
-) -> None:
+def test_sun_switch_changes_theme_and_is_accessible(browser: Any, server: dict[str, str]) -> None:
     page = open_page(browser, server["admin"], scheme="light")
     page.wait_for_selector(".kpi")
+    sw = page.get_by_role("switch")
+    assert sw.get_attribute("aria-checked") == "true" and "Light theme" in sw.get_attribute(
+        "aria-label"
+    )
     light = page.evaluate("getComputedStyle(document.body).backgroundColor")
-    page.get_by_role("button", name="Theme").click()
+    glow = page.evaluate("getComputedStyle(document.querySelector('.theme-knob')).boxShadow")
+    assert "rgba(251, 191, 36" in glow or "rgb(251, 191, 36" in glow  # the sun glows in light mode
+    sw.click()
+    assert sw.get_attribute("aria-checked") == "false"
     assert page.evaluate("document.documentElement.dataset.theme") == "dark"
     assert page.evaluate("getComputedStyle(document.body).backgroundColor") != light
-    page.get_by_role("button", name="Sign out").click()
+    page.wait_for_timeout(500)  # the glow fades with a short transition
+    assert "251, 191, 36" not in page.evaluate(
+        "getComputedStyle(document.querySelector('.theme-knob')).boxShadow"
+    )
+    sw.focus()
+    page.keyboard.press("Space")  # keyboard works too
+    assert sw.get_attribute("aria-checked") == "true"
+    page.context.close()
+
+
+def test_currency_dropdown(browser: Any, server: dict[str, str]) -> None:
+    page = open_page(browser, server["admin"])
+    page.wait_for_selector(".kpi")
+    page.get_by_role("button", name=re.compile("Currency")).click()
+    page.wait_for_selector("#ccy-list button")
+    assert page.locator("#ccy-list button").count() >= 10
+    assert (
+        page.locator("#ccy-list button").first.inner_text().count("EUR") == 1
+    )  # common ones come first
+    page.locator("#ccy-q").fill("franc")
+    assert page.locator("#ccy-list button").count() >= 1
+    page.locator("#ccy-list button", has_text="CHF").first.click()
+    assert page.locator("#ccy-label").inner_text() == "CHF"
+    sync_api.expect(page.locator(".kpi.k2")).to_contain_text("CHF")  # amounts follow the choice
+    assert page.locator("#ccy-pop").is_hidden()
+    page.get_by_role("button", name=re.compile("Currency")).click()
+    page.keyboard.press("Escape")
+    assert page.locator("#ccy-pop").is_hidden()
+    assert page.problems == []
+    page.context.close()
+
+
+def test_date_presets_and_explanation(browser: Any, server: dict[str, str]) -> None:
+    page = open_page(browser, server["admin"])
+    page.wait_for_selector(".kpi")
+    assert page.locator("#date-label").inner_text() == "Today"
+    page.get_by_role("button", name=re.compile("Data as of")).click()
+    assert "as it stood on a past day" in page.locator("#date-pop").inner_text()
+    page.locator("#date-presets button", has_text="Yesterday").click()
+    assert page.locator("#date-label").inner_text() != "Today"
+    settle(page)
+    assert page.locator("#main .err").count() == 0
+    page.get_by_role("button", name=re.compile("Data as of")).click()
+    page.locator("#date-presets button", has_text="Today").click()
+    assert page.locator("#date-label").inner_text() == "Today"
+    page.context.close()
+
+
+def test_header_menu_sign_out_wipes_state(browser: Any, server: dict[str, str]) -> None:
+    page = open_page(browser, server["admin"])
+    page.wait_for_selector(".kpi")
+    page.get_by_role("button", name="Account menu").click()
+    assert "Signed in as" in page.locator("#user-name").inner_text()
+    page.get_by_role("menuitem", name="Sign out").click()
     assert page.locator("#signin").is_visible() and page.locator("#token").input_value() == ""
     page.context.close()

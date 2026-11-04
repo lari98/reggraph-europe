@@ -694,6 +694,7 @@ async function start(token) {
   $("who").textContent = S.dash.view;
   $("notice").textContent = S.labels["notice.decision_support"] || "";
   buildNav();
+  initHeader();
   if (!location.hash.startsWith("#/")) history.replaceState(null, "", location.pathname + location.search + "#/overview");
   route();
 }
@@ -723,27 +724,99 @@ function setupSearch() {
   });
   input.addEventListener("blur", () => setTimeout(close, 120));
   document.addEventListener("keydown", (e) => {
-    if (e.key === "/" && !/^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName)) { e.preventDefault(); input.focus(); }
+    const typing = /^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName);
+    if ((e.key === "/" && !typing) || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k")) { e.preventDefault(); input.focus(); }
   });
 }
 
 // ---------------------------------------------------------------- boot
-function applyTheme(t) { if (t) document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme; }
-let themeNow = "";
-$("theme").addEventListener("click", () => {
-  const dark = themeNow ? themeNow === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
-  themeNow = dark ? "light" : "dark";
-  applyTheme(themeNow);
+// ---------------------------------------------------------------- header: popovers, currency, date, theme, account
+const POPS = [];
+function popover(btn, pop, onOpen) {
+  const close = (focusBack) => { pop.hidden = true; btn.setAttribute("aria-expanded", "false"); if (focusBack) btn.focus(); };
+  const open = () => { POPS.forEach((p) => p.close(false)); pop.hidden = false; btn.setAttribute("aria-expanded", "true"); if (onOpen) onOpen(); };
+  btn.addEventListener("click", () => (pop.hidden ? open() : close(true)));
+  pop.addEventListener("keydown", (e) => { if (e.key === "Escape") { e.stopPropagation(); close(true); } });
+  POPS.push({ close, pop, btn });
+  return { close, open };
+}
+document.addEventListener("click", (e) => POPS.forEach((p) => { if (!p.pop.hidden && !p.pop.contains(e.target) && !p.btn.contains(e.target)) p.close(false); }));
+
+const COMMON = ["EUR", "CHF", "USD", "GBP", "SGD"];
+let CURRENCIES = [];
+function drawCurrencies(filter) {
+  const t = (filter || "").toLowerCase();
+  const list = $("ccy-list");
+  const rows = CURRENCIES.filter((c) => !t || c.code.toLowerCase().includes(t) || c.name.toLowerCase().includes(t));
+  list.replaceChildren(...rows.map((c) => h("li", { role: "presentation" }, h("button", { type: "button", class: "opt", role: "option", "aria-selected": c.code === S.ccy ? "true" : "false",
+    onclick: () => { pickCurrency(c.code); } }, h("span", { class: "sym", text: c.symbol }), h("span", { class: "code", text: c.code }), h("span", { class: "nm", text: c.name }), c.code === S.ccy ? h("span", { class: "tick", text: "\u2713" }) : null))));
+  if (!rows.length) list.replaceChildren(h("li", { class: "pop-note", text: "No currency matches." }));
+}
+function pickCurrency(code) {
+  S.ccy = code; $("ccy-label").textContent = code; ccyPop.close(true);
+  S.cache.clear(); route();
+}
+async function loadCurrencies() {
+  try {
+    const list = await api("/v1/currencies");
+    CURRENCIES = list.slice().sort((a, b) => {
+      const x = COMMON.indexOf(a.code), y = COMMON.indexOf(b.code);
+      return (x < 0 ? 99 : x) - (y < 0 ? 99 : y) || a.code.localeCompare(b.code);
+    });
+  } catch (e) { CURRENCIES = [{ code: "EUR", name: "Euro", symbol: "\u20ac" }]; }
+  drawCurrencies("");
+}
+const ccyPop = popover($("ccy-btn"), $("ccy-pop"), () => { $("ccy-q").value = ""; drawCurrencies(""); $("ccy-q").focus(); });
+$("ccy-q").addEventListener("input", (e) => drawCurrencies(e.target.value));
+$("ccy-q").addEventListener("keydown", (e) => {
+  const opts = [...$("ccy-list").querySelectorAll("button")];
+  if (e.key === "Enter" && opts.length) { e.preventDefault(); opts[0].click(); }
+  else if (e.key === "ArrowDown" && opts.length) { e.preventDefault(); opts[0].focus(); }
 });
-$("print").addEventListener("click", () => window.print());
-$("signout").addEventListener("click", () => { history.replaceState(null, "", location.pathname + location.search); showSignin("Signed out."); });
+$("ccy-list").addEventListener("keydown", (e) => {
+  const opts = [...$("ccy-list").querySelectorAll("button")], i = opts.indexOf(document.activeElement);
+  if (e.key === "ArrowDown") { e.preventDefault(); (opts[i + 1] || opts[0]).focus(); }
+  else if (e.key === "ArrowUp") { e.preventDefault(); (i <= 0 ? $("ccy-q") : opts[i - 1]).focus(); }
+});
+
+const iso = (d) => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+function presets() {
+  const now = new Date(), y = now.getFullYear(), m = now.getMonth();
+  const day = (n) => { const d = new Date(now); d.setDate(d.getDate() - n); return d; };
+  const qEnd = new Date(y, Math.floor(m / 3) * 3, 0);
+  return [["Today", ""], ["Yesterday", iso(day(1))], ["End of last month", iso(new Date(y, m, 0))], ["End of last quarter", iso(qEnd)], ["End of last year", iso(new Date(y - 1, 11, 31))]];
+}
+function setAsOf(v) {
+  S.asof = v; $("asof").value = v;
+  $("date-label").textContent = v ? new Intl.DateTimeFormat(S.locale, { day: "numeric", month: "short", year: "numeric" }).format(new Date(v + "T12:00:00")) : "Today";
+  datePop.close(true); S.cache.clear(); route();
+}
+const datePop = popover($("date-btn"), $("date-pop"), () => {
+  $("date-presets").replaceChildren(...presets().map(([t, v]) => h("button", { type: "button", class: "opt", "aria-selected": v === S.asof ? "true" : "false", onclick: () => setAsOf(v) },
+    h("span", { text: t }), h("span", { class: "nm", text: v || "live data" }), v === S.asof ? h("span", { class: "tick", text: "\u2713" }) : null)));
+});
+$("asof").max = iso(new Date());
+$("asof").addEventListener("change", (e) => { if (e.target.value) setAsOf(e.target.value); });
+
+function applyTheme(light) {
+  document.documentElement.dataset.theme = light ? "light" : "dark";
+  const sw = $("theme");
+  sw.setAttribute("aria-checked", light ? "true" : "false");
+  sw.setAttribute("aria-label", light ? "Light theme (switch to dark)" : "Dark theme (switch to light)");
+}
+$("theme").addEventListener("click", () => applyTheme($("theme").getAttribute("aria-checked") !== "true"));
+applyTheme(!matchMedia("(prefers-color-scheme: dark)").matches);
+
+popover($("user-btn"), $("user-pop"));
+$("print").addEventListener("click", () => { POPS.forEach((p) => p.close(false)); window.print(); });
+$("signout").addEventListener("click", () => { POPS.forEach((p) => p.close(false)); history.replaceState(null, "", location.pathname + location.search); showSignin("Signed out."); });
 $("refresh").addEventListener("click", () => { S.cache.clear(); S.ents = null; route(); toast("Reloaded"); });
-$("currency").addEventListener("change", (e) => {
-  const v = e.target.value.trim().toUpperCase();
-  if (!/^[A-Z]{3}$/.test(v)) { e.target.value = S.ccy; toast("Use a three-letter currency code", true); return; }
-  S.ccy = v; S.cache.clear(); route();
-});
-$("asof").addEventListener("change", (e) => { S.asof = e.target.value; S.cache.clear(); route(); });
+function initHeader() {
+  const who = (S.dash && S.dash.view) || "user";
+  $("avatar-text").textContent = who.slice(0, 2).toUpperCase();
+  $("user-name").textContent = "Signed in as " + who + (S.offline ? " (offline mode)" : "");
+  loadCurrencies();
+}
 $("signin-form").addEventListener("submit", (e) => { e.preventDefault(); start($("token").value.trim()); });
 window.addEventListener("hashchange", () => { if (S.token) route(); });
 setupSearch();

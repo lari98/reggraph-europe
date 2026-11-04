@@ -9,6 +9,8 @@ module also has its own version in `module_versions.json`. Format follows
 Newest first. Written automatically by `python tools/module_manifest.py bump ...`.
 
 <!-- module-log -->
+- **app-shell 0.5.3** (2026-11-04, patch): Release 0.5.3
+- **dashboard 0.4.0** (2026-11-04, minor): Header redesign: currency dropdown, date presets, sun/moon switch, account menu, search shortcut
 - **app-shell 0.5.2** (2026-11-03, patch): Release 0.5.2
 - **dashboard 0.3.0** (2026-11-03, minor): Analyst console: seven pages, drill-down, drawers, search, CSV, network graph, roles
 - **app-shell 0.5.1** (2026-11-03, patch): Release 0.5.1: offline setting, reggraph demo, loopback-only serving, low-energy server options
@@ -49,6 +51,17 @@ Newest first. Written automatically by `python tools/module_manifest.py bump ...
 - **storage 0.2.0** (2026-11-03, minor): Migration 2: entity_versions and ownership_links with immutability triggers
 - **security 0.2.0** (2026-11-03, minor): Add registry:read and registry:write permissions to the role matrix
 - **registry 0.1.0** (2026-11-03, new): Phase 2: LEI-keyed entities, licences, ownership links, groups, entity-to-rule mapping
+
+## [0.5.3] - Header redesign
+
+### Changed
+
+1. New glass header: search with keyboard shortcut (`/` or Ctrl+K), account menu with avatar.
+2. Currency is a searchable dropdown (common currencies first) instead of a text box.
+3. "Data as of" menu with plain-language presets (yesterday, end of last month/quarter/year) and an
+   explanation, instead of a bare date field.
+4. Theme button replaced by a sun/moon switch: glowing sun = light, dark moon = dark; keyboard accessible.
+5. Four new browser tests (switch, currency dropdown, date presets, account menu): 27 in total.
 
 ## [0.5.2] - Analyst console
 
