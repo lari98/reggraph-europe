@@ -35,6 +35,7 @@ _DOCS_PATHS: Final = ("/docs", "/openapi.json")
 _PAGE_PATHS: Final = (
     "/dashboard",
     "/dashboard/app.js",
+    "/dashboard/lang.js",
     "/dashboard/app.css",
     "/dashboard/icon.svg",
 )

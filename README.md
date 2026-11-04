@@ -4,7 +4,7 @@
 change, cross-border exposure and resilience across the EU-27, Switzerland, the United
 Kingdom, the United States and Singapore.
 
-> **Status: Phase 5 of 7 complete (foundation, registry, exposure, insurance, stress lab, PostgreSQL, dashboard, connectors, SSO), release 0.5.3 (offline mode, demo, analyst console).**
+> **Status: Phase 5 of 7 complete (foundation, registry, exposure, insurance, stress lab, PostgreSQL, dashboard, connectors, SSO), release 0.6.0 (live updates, language menu, plain-language overview).**
 > This repository implements the platform core described in the *RegGraph Europe – Pitch Pack*:
 > the regulatory-intelligence engine, the bank and corporate registry, insurance connectivity,
 > the financial exposure graph, the stress testing laboratory, the security model, multi-language
@@ -51,7 +51,8 @@ curl -H "Authorization: Bearer $TOKEN" -H "Accept-Language: de" http://127.0.0.1
 See the dashboard with invented data, offline and on `127.0.0.1` only (safe on a train or plane):
 
 ```bash
-reggraph demo --open
+reggraph demo --open          # restarts itself when code changes; the open page updates by itself
+reggraph demo --no-watch      # lowest energy use (train, plane)
 ```
 
 Details, offline guarantees and server deployment: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).

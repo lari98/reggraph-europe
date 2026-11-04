@@ -101,3 +101,19 @@ def test_add_registers_a_new_module_and_logs(
     assert mm.check() == 0
     assert mm.add("gamma", "again") == 2  # cannot register twice
     assert mm.add("unknown", "x") == 2
+
+
+def test_svg_provenance_metadata_does_not_change_the_fingerprint(mm: ModuleType) -> None:
+    """Upload tools may embed a <metadata> block in an SVG; the fingerprint must ignore it."""
+    icon = mm.ROOT / "src/reggraph/alpha/icon.svg"
+    plain = '<svg xmlns="http://www.w3.org/2000/svg"><rect width="1" height="1"/></svg>'
+    icon.write_text(plain)
+    before = mm.fingerprint(("src/reggraph/alpha",))
+    icon.write_text(
+        '<svg xmlns="http://www.w3.org/2000/svg" xmlns:c2pa="http://c2pa.org/manifest">'
+        "<metadata><c2pa:manifest>QUJD\nREVG</c2pa:manifest></metadata>"
+        '<rect width="1" height="1"/></svg>'
+    )
+    assert mm.fingerprint(("src/reggraph/alpha",)) == before
+    icon.write_text(plain.replace('width="1"', 'width="2"'))  # a real change still counts
+    assert mm.fingerprint(("src/reggraph/alpha",)) != before

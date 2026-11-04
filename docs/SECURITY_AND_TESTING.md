@@ -90,6 +90,12 @@ Registry threats (Phase 2) — tests in `tests/security/test_registry_attacks.py
 | T76 | SSO or key-set fetch while offline | start-up validation | `test_offline_mode_rejects_sso_configuration` |
 | T77 | Token leaking from the demo link | URL fragment, removed by the page, never stored | `test_page_renders_cleanly` (hash empty) |
 | T78 | Markup injected through the link fragment | strict pattern, `textContent` only | `test_no_page_script_can_be_injected` |
+| T80 | Page texts written as markup, or storage used for the token | `textContent` only; no storage APIs; checked in source | `test_page_never_writes_texts_as_markup`, `test_app_uses_no_browser_storage` |
+| T81 | Hostile parts in the reload fragment (`r=javascript:`, `<b>`, future day, bad theme) | each part matched against a strict pattern, else ignored | `test_fragment_parts_are_validated` |
+| T82 | Version endpoint leaking data | returns only version and build fingerprint, `no-store` | `test_version_endpoint_is_public_tiny_and_uncacheable` |
+| T83 | Hostile `Accept-Language` | allow-list negotiation, falls back to English | `test_the_notice_follows_the_language_header` |
+| T84 | Demo signing key readable by others | key file created owner-only; random key if the disk is read-only | `test_demo_key_is_created_once_and_kept_private` |
+| T85 | Stale or wrong build kept after a release | pages notice a new build and reload; changed files served fresh | `test_new_release_reloads_page_and_keeps_the_state`, `test_a_changed_page_file_is_served_without_a_restart` |
 | T79 | Unreadable colours / third-party fonts | AA contrast tests, system fonts, CSP `img-src 'self'` | `test_text_colour_pairs_meet_wcag_aa`, `test_fonts_and_shapes` |
 
 Property-based tests (`TestProperties`, Hypothesis, 200 examples each) check that

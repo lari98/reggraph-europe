@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Iterator
 from datetime import UTC, datetime
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
@@ -206,3 +208,59 @@ def test_page_files_are_served_with_a_strict_policy(world: TestClient) -> None:
 def test_page_routes_do_not_reach_the_file_system(world: TestClient, path: str) -> None:
     resp = world.get(path)
     assert resp.status_code in {200, 307, 308, 404} and "root:" not in resp.text
+
+
+# ---------------------------------------------------------------- live updates (release 0.6.0)
+def test_version_endpoint_is_public_tiny_and_uncacheable(client: TestClient) -> None:
+    import reggraph
+
+    res = client.get("/dashboard/version")
+    assert res.status_code == 200
+    body = res.json()
+    assert set(body) == {"version", "build"} and body["version"] == reggraph.__version__
+    assert re.fullmatch(r"[0-9a-f]{12}", body["build"])
+    assert res.headers["cache-control"] == "no-store"
+    assert client.get("/dashboard/version").json() == body  # stable while nothing changes
+
+
+def test_language_script_is_served_with_the_page_policy(client: TestClient) -> None:
+    res = client.get("/dashboard/lang.js")
+    assert res.status_code == 200 and res.headers["content-type"].startswith("text/javascript")
+    assert "script-src 'self'" in res.headers["content-security-policy"]
+    assert "RG_I18N" in res.text
+
+
+def test_a_changed_page_file_is_served_without_a_restart(
+    client: TestClient, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import shutil
+
+    from reggraph.api import routes
+    from reggraph.dashboard import STATIC_DIR
+
+    copy = tmp_path / "static"
+    shutil.copytree(STATIC_DIR, copy)
+    monkeypatch.setattr(routes, "STATIC_DIR", copy)
+    monkeypatch.setattr(routes, "_PAGE_CACHE", {})
+    first_build = client.get("/dashboard/version").json()["build"]
+    first = client.get("/dashboard/app.js").text
+    (copy / "app.js").write_text(first + "\n// new release\n", encoding="utf-8")
+    assert client.get("/dashboard/app.js").text.endswith("// new release\n")  # fresh from disk
+    assert client.get("/dashboard/version").json()["build"] != first_build  # pages notice it
+
+
+def test_the_overview_payload_lists_languages_and_the_build(world: TestClient) -> None:
+    body = world.get("/v1/dashboard", headers=hdr(world, Role.TENANT_ADMIN)).json()
+    tags = {entry["tag"] for entry in body["languages"]}
+    assert {"en", "de", "fr", "it", "es", "pl", "de-CH", "zh-SG"} <= tags and len(tags) == 34
+    assert body["build"] == world.get("/dashboard/version").json()["build"]
+    assert body["locale"] == "en" and body["version"]
+
+
+def test_the_notice_follows_the_language_header(world: TestClient) -> None:
+    admin = hdr(world, Role.TENANT_ADMIN)
+    en = world.get("/v1/dashboard", headers=admin).json()["labels"]["notice.decision_support"]
+    fr = world.get("/v1/dashboard", headers={**admin, "Accept-Language": "fr"}).json()
+    assert fr["locale"] == "fr" and fr["labels"]["notice.decision_support"] != en
+    junk = world.get("/v1/dashboard", headers={**admin, "Accept-Language": "xx-<script>"}).json()
+    assert junk["locale"] == "en"  # an unknown or hostile tag falls back to English

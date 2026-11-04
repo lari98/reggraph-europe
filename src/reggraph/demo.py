@@ -7,14 +7,21 @@
   is market data or legal content.
 * The printed link carries a short-lived token in the URL *fragment* (the part after ``#``),
   which browsers never send to a server; the page removes it from the address bar at once.
+* The signing key is kept in ``~/.reggraph/demo.key`` (owner-only) so that restarting the demo
+  does not sign an open page out. It signs tokens for invented data on the loopback address only.
+* By default the demo restarts itself when a Python or catalog file changes (see
+  :func:`run_demo_watched`); page files are served fresh from disk, so they need no restart.
 """
 
 from __future__ import annotations
 
 import secrets
+import subprocess  # nosec B404
 import sys
+import time
 import webbrowser
 from datetime import timedelta
+from pathlib import Path
 from typing import Any
 
 from reggraph.api.deps import Services, build_services
@@ -29,6 +36,10 @@ from reggraph.stress import ScenarioInput
 
 TENANT = "demo"
 LOOPBACK = {"127.0.0.1", "::1", "localhost"}
+TOKEN_HOURS = 12
+WATCH_SECONDS = 2.0
+_WATCHED_SUFFIXES = {".py", ".json"}  # page files (html/js/css) are served fresh, no restart
+_PACKAGE_DIR = Path(__file__).resolve().parent
 
 
 def make_lei(seed: str) -> str:
@@ -250,6 +261,78 @@ def seed(services: Services) -> dict[str, Principal]:
     return people
 
 
+def demo_key(home: Path | None = None) -> bytes:
+    """A signing key that survives restarts (stored owner-only); random if the disk is read-only."""
+    folder = (home or Path.home()) / ".reggraph"
+    file = folder / "demo.key"
+    try:
+        if file.is_file():
+            key = file.read_bytes().strip()
+            if len(key) >= 32:
+                return key
+        folder.mkdir(mode=0o700, exist_ok=True)
+        key = secrets.token_urlsafe(48).encode()
+        file.write_bytes(key)
+        file.chmod(0o600)
+        return key
+    except OSError:
+        return secrets.token_urlsafe(48).encode()
+
+
+def _snapshot() -> dict[str, int]:
+    """Modification time of every file whose change needs a restart (cheap: a few hundred stats)."""
+    return {
+        str(p): p.stat().st_mtime_ns
+        for p in _PACKAGE_DIR.rglob("*")
+        if p.suffix in _WATCHED_SUFFIXES and "__pycache__" not in p.parts and p.is_file()
+    }
+
+
+def run_demo_watched(host: str, port: int, role: str, open_browser: bool) -> int:
+    """Run the demo and restart it when the code changes, so a fix needs no manual stop/start.
+
+    The open browser page reconnects by itself: the signing key is stable, so its token stays
+    valid, and the page notices the new build and reloads. Use ``--no-watch`` for the lowest
+    energy use (travel mode): then nothing runs besides the server.
+    """
+    if host not in LOOPBACK:
+        sys.stderr.write("refused: demo mode only listens on the loopback address\n")
+        return 2
+    command = [
+        sys.executable, "-m", "reggraph.cli", "demo",
+        "--host", host, "--port", str(port), "--role", role, "--no-watch",
+    ]  # fmt: skip
+    child: subprocess.Popen[bytes] | None = None
+    quick_failures = 0
+    first = True
+    try:
+        while True:
+            started = time.monotonic()
+            before = _snapshot()
+            args = command + (["--open"] if open_browser and first else [])
+            child = subprocess.Popen(args)  # noqa: S603  # nosec B603
+            first = False
+            changed = False
+            while child.poll() is None and not changed:
+                time.sleep(WATCH_SECONDS)
+                changed = _snapshot() != before
+            if not changed:  # the server ended on its own (port busy, Ctrl+C in the child ...)
+                if time.monotonic() - started < 5 and quick_failures < 5:
+                    quick_failures += 1
+                    time.sleep(1)
+                    continue
+                return int(child.returncode or 0)
+            sys.stdout.write("Code changed - restarting the demo ...\n")
+            sys.stdout.flush()
+            child.terminate()
+            child.wait(timeout=10)
+    except KeyboardInterrupt:
+        return 0
+    finally:
+        if child is not None and child.poll() is None:
+            child.terminate()
+
+
 def run_demo(host: str, port: int, role: str, open_browser: bool) -> int:
     if host not in LOOPBACK:
         sys.stderr.write("refused: demo mode only listens on the loopback address\n")
@@ -260,7 +343,7 @@ def run_demo(host: str, port: int, role: str, open_browser: bool) -> int:
 
     settings = Settings(
         env="dev",
-        token_keys={"demo": secrets.token_urlsafe(48).encode()},
+        token_keys={"demo": demo_key()},
         active_kid="demo",
         offline=True,
         rate_burst=60,
@@ -269,13 +352,13 @@ def run_demo(host: str, port: int, role: str, open_browser: bool) -> int:
     services = build_services(settings, SystemClock())
     people = seed(services)
     who = people[role]
-    token = services.signer.issue(who, ttl_seconds=8 * 3600)
+    token = services.signer.issue(who, ttl_seconds=TOKEN_HOURS * 3600)
     app = create_app(settings, SystemClock(), services=services)
     shown = "localhost" if host == "localhost" else host
     url = f"http://{shown}:{port}/dashboard#token={token}"
     sys.stdout.write(
         "RegGraph demo (offline, invented data, loopback only)\n"
-        f"Open this link in Chrome (valid 8 hours, role: {role}):\n\n{url}\n\n"
+        f"Open this link in Chrome (valid {TOKEN_HOURS} hours, role: {role}):\n\n{url}\n\n"
         "Stop with Ctrl+C. Data disappears when the program stops.\n"
     )
     sys.stdout.flush()

@@ -12,6 +12,7 @@ import socket
 import threading
 import time
 from collections.abc import Iterator
+from itertools import pairwise
 from pathlib import Path
 from typing import Any
 
@@ -62,6 +63,7 @@ TEXT_PAIRS = [
     ("side-ink", "side-bg"), ("side-muted", "side-bg"), ("side-ink", "side-active"),
     ("side-muted", "side-active"),
     ("ok", "ok-bg"), ("warn", "warn-bg"), ("bad", "bad-bg"), ("info", "info-bg"),
+    ("ink", "ok-bg"), ("ink", "warn-bg"), ("ink", "bad-bg"),  # attention list and hero boxes
 ]  # fmt: skip
 GRAPHIC = ["c1", "c2", "c3", "c4", "c5", "c6"]
 
@@ -142,11 +144,22 @@ def browser() -> Iterator[Any]:
 
 
 def open_page(
-    browser: Any, url: str, *, size: tuple[int, int] = (1280, 900), scheme: str = "light"
+    browser: Any,
+    url: str,
+    *,
+    size: tuple[int, int] = (1280, 900),
+    scheme: str = "light",
+    init_script: str | None = None,
+    locale: str = "en-US",
 ) -> Any:
     ctx = browser.new_context(
-        viewport={"width": size[0], "height": size[1]}, color_scheme=scheme, accept_downloads=True
+        viewport={"width": size[0], "height": size[1]},
+        color_scheme=scheme,
+        accept_downloads=True,
+        locale=locale,
     )
+    if init_script:
+        ctx.add_init_script(init_script)  # test hook, e.g. a fast refresh interval
     page = ctx.new_page()
     page.problems = []  # type: ignore[attr-defined]
     page.requests = []  # type: ignore[attr-defined]
@@ -160,18 +173,28 @@ def open_page(
     return page
 
 
+def _wait(page: Any, expression: str, what: str, tries: int = 100) -> None:
+    """Poll a page expression from Python (``wait_for_function`` is blocked by the page CSP)."""
+    for _ in range(tries):
+        if page.evaluate(expression):
+            return
+        page.wait_for_timeout(100)
+    raise AssertionError(f"timed out waiting for {what}")
+
+
 def settle(page: Any) -> None:
-    page.wait_for_function(
-        "document.querySelector('#main') && !document.querySelector('#main .skel')", timeout=10000
+    _wait(
+        page, "!!document.querySelector('#main') && !document.querySelector('#main .skel')", "page"
     )
 
 
 def h1(page: Any, prefix: str) -> None:
     """Wait until the page heading starts with ``prefix`` (the route change is asynchronous)."""
-    page.wait_for_function(
-        "p => (document.querySelector('#main h1') || {textContent: ''}).textContent.startsWith(p)",
-        arg=prefix,
-        timeout=10000,
+    _wait(
+        page,
+        "((document.querySelector('#main h1') || {textContent: ''}).textContent"
+        f".startsWith({prefix!r}))",
+        f"heading {prefix!r}",
     )
     settle(page)
 
@@ -226,6 +249,186 @@ def test_overview_layout_at_every_size(
     page.context.close()
 
 
+def _admin_token(server: dict[str, str]) -> str:
+    return server["admin"].split("#token=", 1)[1]
+
+
+def _api(server: dict[str, str], method: str, path: str) -> Any:
+    import json
+    import urllib.request
+
+    req = urllib.request.Request(  # noqa: S310 - loopback test server
+        server["base"].rsplit("/dashboard", 1)[0] + path,
+        method=method,
+        headers={"Authorization": "Bearer " + _admin_token(server)},
+    )
+    with urllib.request.urlopen(req, timeout=10) as res:  # noqa: S310  # nosec B310
+        return json.loads(res.read() or b"null")
+
+
+@pytest.mark.parametrize("size", [(1440, 900), (1280, 800), (1024, 768), (820, 1100), (390, 844)])
+@pytest.mark.parametrize("lang", ["en-US", "de-DE"])
+def test_overview_boxes_are_aligned_and_never_clipped(
+    browser: Any, server: dict[str, str], size: tuple[int, int], lang: str
+) -> None:
+    """Boxes in one row share a top edge and a height; no number is cut off; nothing overflows."""
+    page = open_page(browser, server["admin"], size=size, locale=lang)
+    page.wait_for_selector(".kpi-ov")
+    settle(page)
+    page.wait_for_timeout(600)
+    rows = page.evaluate(
+        """() => {
+          const rows = {};
+          for (const el of document.querySelectorAll('.kpi-ov, #main .grid > .card')) {
+            const r = el.getBoundingClientRect();
+            (rows[Math.round(r.top + scrollY)] ||= []).push([r.height, r.left, r.right, r.width]);
+          }
+          return Object.values(rows);
+        }"""
+    )
+    for row in rows:
+        heights = {round(h) for h, *_ in row}
+        assert len(heights) == 1, (size, heights)  # equal height inside a row
+        lefts = sorted((left, right) for _, left, right, _w in row)
+        assert all(a[1] <= b[0] + 1 for a, b in pairwise(lefts))  # no overlap
+    clipped = page.evaluate(
+        "[...document.querySelectorAll('.kpi-ov .v')].filter(e => e.scrollWidth > e.clientWidth + 1).length"
+    )
+    assert clipped == 0, (size, lang)
+    assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
+    assert page.locator(".hero").is_visible() and page.locator(".guide").is_visible()
+    page.context.close()
+
+
+def test_overview_explains_itself_in_plain_words(browser: Any, server: dict[str, str]) -> None:
+    page = open_page(browser, server["admin"])
+    page.wait_for_selector(".kpi-ov")
+    settle(page)
+    text = page.locator(".hero").inner_text()
+    assert "ACTION NEEDED" in text.upper() and "capital shortfall" in text  # the breach is stated
+    assert page.locator(".attn a").count() >= 2  # every attention item is a link
+    page.locator(".guide summary").click()
+    assert "20-character official ID" in page.locator(".guide").inner_text()
+    for kpi_card in page.locator(".kpi-ov").all():  # each box says what it means in a sentence
+        assert len(kpi_card.locator(".s").inner_text().split()) >= 4
+    page.locator(".attn a").first.click()
+    h1(page, "Stress")
+    page.context.close()
+
+
+def test_live_refresh_redraws_in_place_without_reload(browser: Any, server: dict[str, str]) -> None:
+    """New data appears by itself: the page is not reloaded and the open guide stays open.
+
+    Runs before the acknowledge test below (module order) so that an open alert still exists.
+    """
+    page = open_page(browser, server["admin"], init_script="window.__RG_LIVE_MS = 500;")
+    page.wait_for_selector(".kpi-ov")
+    settle(page)
+    page.evaluate("window.__marker = 42")
+    page.locator(".guide summary").click()
+    before = int(page.locator(".kpi.k6 .v").inner_text())
+    assert before >= 1
+    alert = next(a for a in _api(server, "GET", "/v1/source-alerts?status=open"))
+    _api(server, "POST", f"/v1/source-alerts/{alert['alert_id']}/acknowledge")
+    sync_api.expect(page.locator(".kpi.k6 .v")).to_have_text(str(before - 1), timeout=8000)
+    assert page.evaluate("window.__marker") == 42  # same document: no reload happened
+    assert page.locator(".guide[open]").count() == 1  # the open guide survived the redraw
+    assert page.locator("#live-time").inner_text() != ""
+    assert page.problems == []
+    page.context.close()
+
+
+def test_live_pill_pauses_and_reconnects(browser: Any, server: dict[str, str]) -> None:
+    page = open_page(browser, server["admin"], init_script="window.__RG_LIVE_MS = 400;")
+    page.wait_for_selector(".kpi-ov")
+    live = page.locator("#live")
+    assert live.get_attribute("data-state") == "on"
+    live.click()
+    assert live.get_attribute("data-state") == "paused"
+    seen: list[str] = []
+    page.on("request", lambda r: seen.append(r.url) if "/dashboard/version" in r.url else None)
+    page.wait_for_timeout(1500)
+    assert seen == []  # paused: no request at all
+    live.click()
+    sync_api.expect(live).to_have_attribute("data-state", "on")
+    page.route("**/dashboard/version", lambda route: route.abort())
+    sync_api.expect(live).to_have_attribute("data-state", "reconnect", timeout=8000)
+    page.unroute("**/dashboard/version")
+    sync_api.expect(live).to_have_attribute("data-state", "on", timeout=15000)  # resumes by itself
+    page.context.close()
+
+
+def test_new_release_reloads_page_and_keeps_the_state(browser: Any, server: dict[str, str]) -> None:
+    page = open_page(browser, server["admin"], init_script="window.__RG_LIVE_MS = 400;")
+    page.wait_for_selector(".kpi-ov")
+    go(page, "exposure")
+    page.evaluate("window.__marker = 1")
+    page.get_by_role("button", name=re.compile("Currency")).click()
+    page.locator("#ccy-list button", has_text="CHF").first.click()
+    page.get_by_role("button", name=re.compile("Language")).click()
+    page.locator("#lang-list button", has_text="Deutsch").first.click()
+    settle(page)
+    page.route(
+        "**/dashboard/version",
+        lambda route: route.fulfill(json={"version": "9.9.9", "build": "ffffffffffff"}),
+    )
+    for _ in range(75):  # the page reloads by itself (string scripts are blocked by the page CSP)
+        if page.evaluate("window.__marker === undefined"):
+            break
+        page.wait_for_timeout(200)
+    else:
+        raise AssertionError("the page did not reload after a new build was announced")
+    page.wait_for_selector(".kpi-ov, #main h1")
+    settle(page)
+    assert page.evaluate("location.hash").startswith("#/exposure")  # same page
+    assert page.locator("#ccy-label").inner_text() == "CHF"  # same currency
+    assert page.locator("#lang-label").inner_text() == "DE"  # same language
+    assert page.locator("#nav a[aria-current=page]").inner_text().strip() == "Risikopositionen"
+    assert "token" not in page.evaluate("location.hash")  # the token left the address bar again
+    page.context.close()
+
+
+def test_language_dropdown_translates_and_formats(browser: Any, server: dict[str, str]) -> None:
+    page = open_page(browser, server["admin"])
+    page.wait_for_selector(".kpi-ov")
+    english_notice = page.locator("#notice").inner_text()
+    page.get_by_role("button", name=re.compile("Language")).click()
+    assert page.locator("#lang-list button").count() >= 30  # all supported languages are listed
+    page.locator("#lang-q").fill("deut")
+    page.locator("#lang-list button", has_text="Deutsch").first.click()
+    sync_api.expect(page.locator("#main h1")).to_have_text("Übersicht")
+    assert page.locator("html").get_attribute("lang") == "de"
+    assert page.locator("#nav a").nth(2).inner_text().strip() == "Risikopositionen"
+    assert page.locator("#date-label").inner_text() == "Heute"
+    assert "Mrd" in page.locator(".kpi.k2 .v").inner_text()  # German number format
+    assert page.locator("#notice").inner_text() != english_notice  # server-translated notice
+    page.get_by_role("button", name=re.compile("Sprache")).click()
+    page.locator("#lang-list button", has_text="Italiano").first.click()
+    sync_api.expect(page.locator("#main h1")).to_have_text("Panoramica")
+    page.get_by_role("button", name=re.compile("Lingua")).click()  # a language without a full text
+    page.locator("#lang-q").fill("polski")
+    page.locator("#lang-list button", has_text="Polski").first.click()
+    sync_api.expect(page.locator("#notice")).not_to_have_text(english_notice)
+    assert page.locator("#main h1").inner_text() == "Overview"  # text stays English, honestly
+    assert page.locator("#lang-list .chip-neutral").count() >= 1  # the list says which are partial
+    assert page.problems == []
+    page.context.close()
+
+
+def test_fragment_parts_are_validated(browser: Any, server: dict[str, str]) -> None:
+    tok = _admin_token(server)
+    base = server["base"]
+    page = open_page(
+        browser, f"{base}#token={tok}&r=javascript:alert(1)&l=%3Cb%3E&c=eur&d=2999-01-01&th=evil"
+    )
+    page.wait_for_selector(".kpi-ov")
+    assert page.evaluate("location.hash") == "#/overview"  # hostile route ignored
+    assert page.locator("#ccy-label").inner_text() == "EUR"  # lower-case currency ignored
+    assert page.locator("#date-label").inner_text() == "Today"  # future day ignored
+    assert page.problems == []
+    page.context.close()
+
+
 def test_fonts_and_shapes(browser: Any, server: dict[str, str]) -> None:
     page = open_page(browser, server["admin"])
     page.wait_for_selector(".kpi")
@@ -233,7 +436,11 @@ def test_fonts_and_shapes(browser: Any, server: dict[str, str]) -> None:
     fam = css("getComputedStyle(document.body).fontFamily")
     assert "system-ui" in fam and "http" not in fam
     assert css("getComputedStyle(document.body).fontSize") == "14px"
+    hero = float(css("parseFloat(getComputedStyle(document.querySelector('#main h1')).fontSize)"))
+    assert 24 <= hero <= 32  # overview title scales with the screen
+    go(page, "entities")
     assert css("getComputedStyle(document.querySelector('#main h1')).fontSize") == "22px"
+    go(page, "overview")
     assert css("getComputedStyle(document.querySelector('.card')).borderRadius") == "14px"
     assert css("getComputedStyle(document.querySelector('.kpi')).borderTopWidth") == "3px"
     assert css("getComputedStyle(document.querySelector('.side')).position") == "sticky"
@@ -317,11 +524,11 @@ def test_search_drawer_verify_and_acknowledge(browser: Any, server: dict[str, st
     go(page, "data")
     assert "chain intact" in page.locator("#main").inner_text()
     assert page.get_by_role("button", name="Run ecb_rates").is_disabled()  # offline: switched off
+    open_alerts = page.get_by_role("button", name="Acknowledge").count()
+    assert open_alerts >= 1
     page.get_by_role("button", name="Acknowledge").first.click()
     page.wait_for_selector(".toast")
-    sync_api.expect(page.get_by_role("button", name="Acknowledge")).to_have_count(
-        1
-    )  # one alert left
+    sync_api.expect(page.get_by_role("button", name="Acknowledge")).to_have_count(open_alerts - 1)
     assert page.problems == []
     page.context.close()
 

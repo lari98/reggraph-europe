@@ -24,6 +24,11 @@ def main(argv: list[str] | None = None) -> int:
         "--role", default="admin", choices=["admin", "analyst", "compliance", "viewer"]
     )
     demo.add_argument("--open", action="store_true", help="open the page in the default browser")
+    demo.add_argument(
+        "--no-watch",
+        action="store_true",
+        help="do not restart on code changes (lowest energy use, e.g. on a train)",
+    )
     tok = sub.add_parser("issue-token", help="mint a short-lived token (not allowed in prod)")
     tok.add_argument("--tenant", required=True)
     tok.add_argument("--user", required=True)
@@ -32,9 +37,10 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     if args.command == "demo":
-        from reggraph.demo import run_demo
+        from reggraph.demo import run_demo, run_demo_watched
 
-        return run_demo(args.host, args.port, args.role, args.open)
+        runner = run_demo if args.no_watch else run_demo_watched
+        return runner(args.host, args.port, args.role, args.open)
 
     settings = Settings.from_env()
     if args.command == "serve":

@@ -9,6 +9,12 @@ module also has its own version in `module_versions.json`. Format follows
 Newest first. Written automatically by `python tools/module_manifest.py bump ...`.
 
 <!-- module-log -->
+- **dashboard 0.5.1** (2026-11-04, patch): Language menu rows no longer clipped; German soft hyphen in a KPI title
+- **api 0.7.2** (2026-11-04, patch): Doc table line length (second pass)
+- **api 0.7.1** (2026-11-04, patch): Doc table line length
+- **app-shell 0.6.0** (2026-11-04, minor): Release 0.6.0: demo restarts itself on code changes, stable demo key, --no-watch
+- **api 0.7.0** (2026-11-04, minor): Pages served fresh from disk, /dashboard/version, lang.js route, languages and build in the overview payload
+- **dashboard 0.5.0** (2026-11-04, minor): Plain-language overview, live updates (Live pill, in-place redraw, reload on new build), language menu, lang.js texts
 - **app-shell 0.5.3** (2026-11-04, patch): Release 0.5.3
 - **dashboard 0.4.0** (2026-11-04, minor): Header redesign: currency dropdown, date presets, sun/moon switch, account menu, search shortcut
 - **app-shell 0.5.2** (2026-11-03, patch): Release 0.5.2
@@ -51,6 +57,30 @@ Newest first. Written automatically by `python tools/module_manifest.py bump ...
 - **storage 0.2.0** (2026-11-03, minor): Migration 2: entity_versions and ownership_links with immutability triggers
 - **security 0.2.0** (2026-11-03, minor): Add registry:read and registry:write permissions to the role matrix
 - **registry 0.1.0** (2026-11-03, new): Phase 2: LEI-keyed entities, licences, ownership links, groups, entity-to-rule mapping
+
+## [0.6.0] - Live updates, language menu, plain-language overview
+
+### Added
+
+1. **Live updates**: the page refreshes its numbers every 30 s while visible, redraws in place, shows a
+   **Live** pill (pause / reconnecting states) and reloads itself when a new release is served,
+   keeping token, page, language, currency, day and theme.
+2. `reggraph demo` restarts itself when code changes (`--no-watch` switches it off); stable signing key in
+   `~/.reggraph/demo.key` so open pages stay signed in; pages are served fresh from disk.
+3. **Language menu** with 34 locales; English, German, French, Italian, Spanish fully translated
+   (`lang.js`), other languages get localised numbers, dates, currencies and the legal notice.
+4. `GET /dashboard/version`; the overview payload lists languages, version and build.
+
+### Changed
+
+1. **Overview rewritten for stakeholders**: status sentence, "what needs attention" list, six KPI boxes
+   with a plain-language line each, one-minute guide, aligned equal-height boxes, no clipped numbers.
+2. Header fits one row; pill labels stay available to screen readers on narrow screens.
+
+### Tests
+
+Browser tests 27 -> 43 (alignment at 5 sizes x 2 languages, live refresh, pause/reconnect, reload on a new
+build, language switching, fragment validation); new text-catalog, API and demo-restart tests.
 
 ## [0.5.3] - Header redesign
 

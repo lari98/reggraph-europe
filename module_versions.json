@@ -1,20 +1,20 @@
 {
   "modules": {
     "api": {
-      "fingerprint": "e0395a87b01bdf6a25b29bc388a6ace10147a5b4b8e2b3d63bd6e0f32ce78611",
+      "fingerprint": "dd453b0d79d7d602b8eeff591c5cad62b9dd01cc1c4bf21bba53289025ae2b6b",
       "paths": [
         "src/reggraph/api"
       ],
-      "version": "0.6.0"
+      "version": "0.7.2"
     },
     "app-shell": {
-      "fingerprint": "258f7d50b0e9f30174c6e0290d2305dabef49da8317c007c93f6d1b624bc9cf1",
+      "fingerprint": "d63965f8ffeeaf6cdda9be5410fb7c5c63137e2a6decf45e7ffc6570cc77b4d1",
       "paths": [
         "src/reggraph/__init__.py",
         "src/reggraph/config.py",
         "src/reggraph/cli.py"
       ],
-      "version": "0.5.3"
+      "version": "0.6.0"
     },
     "connectivity": {
       "fingerprint": "18b41274f4f6ac93a99944d0de6578ac2868023fed5d402ecb8decad0326e916",
@@ -45,11 +45,11 @@
       "version": "0.2.0"
     },
     "dashboard": {
-      "fingerprint": "640e8c50a29b389b052c407b9ae5205a481b3bce250f8569ea2cc885684f58a1",
+      "fingerprint": "a783b8b3fbecb36b65b0e91bda6333675633a059641129c7fda070b6bf91ca44",
       "paths": [
         "src/reggraph/dashboard"
       ],
-      "version": "0.4.0"
+      "version": "0.5.1"
     },
     "exposure": {
       "fingerprint": "4c270759f2dde8b134913cf73d14983c96381b867370266b5ef30e7dca315ce3",

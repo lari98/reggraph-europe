@@ -17,7 +17,29 @@ reggraph demo --open
 "(demo)"), starts the server on `127.0.0.1` and opens Chrome on a link such as
 `http://127.0.0.1:8000/dashboard#token=...`. The token sits after `#`, which browsers never send to a
 server, and the page removes it from the address bar at once. Stop with `Ctrl+C`; the data vanishes.
-Options: `--port 8080`, `--role analyst|compliance|viewer` (shows how each role sees a different page).
+Options: `--port 8080`, `--role analyst|compliance|viewer` (shows how each role sees a different page),
+`--no-watch` (see section 1a).
+
+### 1a. Updates without closing the browser — tested
+
+| What changes | What you do | What happens |
+|---|---|---|
+| Data (for example an alert is acknowledged) | nothing | the page re-reads the numbers every 30 s while its tab is visible and redraws in place; the header pill says **Live · Updated hh:mm:ss**; click it to pause |
+| Page files (`index.html`, `app.js`, `app.css`, `lang.js`) | save the file | the server serves the file fresh from disk (no restart); the open page sees the new build within 30 s and reloads itself, keeping the token, page, language, currency, day and theme |
+| Python code or catalogs | save the file | `reggraph demo` notices within 2 s, restarts itself and the open page reconnects; the signing key is stored in `~/.reggraph/demo.key` (owner only), so the token in the open tab stays valid (12 h) |
+| A new release (`git pull`, `pip install -e .`) | restart `reggraph demo` once | the open page reconnects and reloads by itself |
+
+If the server is away the pill turns amber (**Reconnecting**) and the page retries with growing pauses
+until it is back. A hidden tab makes no request at all. For the lowest energy use (train, plane) start
+with `reggraph demo --no-watch`: nothing then runs besides the server, and you can pause the Live pill.
+
+### 1b. Languages
+
+The header has a **Language** menu with all 34 supported locales. English, German, French, Italian and
+Spanish are fully translated (navigation, header, Overview, buttons). For every other language the
+numbers, dates, currencies and the legal notice follow the chosen language and the remaining interface
+text stays English; the menu marks those as "numbers & dates". More languages are added in `lang.js`
+(one block per language; a test checks every key and placeholder).
 
 ## 2. Train / plane mode — tested
 
@@ -28,11 +50,14 @@ Options: `--port 8080`, `--role analyst|compliance|viewer` (shows how each role 
 | No outbound connection | connectors use `OfflineFetcher`; `POST /v1/connectors/.../run` is refused | `test_connectors_are_switched_off_and_never_touch_the_network` (sockets patched to fail) |
 | Nothing reachable from the Wi-Fi/network | `serve` and `demo` refuse any host except 127.0.0.1, ::1, localhost | `test_serve_refuses_a_public_address_in_offline_mode` |
 | No SSO/identity-provider call | configuration with SSO or without local tokens is rejected at start-up | `test_offline_mode_rejects_sso_configuration` |
-| Page makes no external request and no timers | browser test records every request; page has no polling | `test_page_renders_cleanly` |
+| Page makes no external request | browser test records every request | `test_every_page_renders_cleanly_and_stays_local` |
+| Live refresh costs nothing while hidden or paused | no request at all while paused; timer skips hidden tabs | `test_live_pill_pauses_and_reconnects` |
 
-Energy: one process, one worker, no reload, no access log, no background polling. Measured on the
-development container: **0.03 CPU-seconds in 20 s idle (~0.15 %), 70 MB memory**. Your laptop will differ;
-close the tab and the server uses nothing but memory.
+Energy: one process, one worker, no access log. With `--no-watch` there is no file watching; the open
+page makes one tiny request every 30 s while visible (pausable, none while hidden). Measured on the
+development container before live updates were added: **0.03 CPU-seconds in 20 s idle (~0.15 %), 70 MB
+memory**; the watcher adds one directory scan every 2 s. Your laptop will differ; close the tab and the
+server uses nothing but memory.
 
 ## 3. Put it on a server so stakeholders can open it from anywhere — not tested
 

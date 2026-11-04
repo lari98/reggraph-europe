@@ -52,7 +52,8 @@ GET     /v1/stress/runs                         stress:read          list runs
 GET     /v1/stress/runs/{id}                    stress:read          run and result
 GET     /v1/stress/runs/{id}/snapshot           stress:read          frozen inputs
 POST    /v1/stress/runs/{id}/verify             stress:read          recompute and check
-GET     /dashboard (+ app.js, app.css)          public page          the dashboard page (no data)
+GET     /dashboard (+ app.js, lang.js, app.css) public page          the dashboard page (no data)
+GET     /dashboard/version                      public               version + build id
 GET     /v1/dashboard                           dashboard:read       role-shaped overview
 POST    /v1/connectors/{name}/run               connectors:run       run ecb_rates / eurlex_watch
 GET     /v1/connectors/runs                     connectors:read      connector run history
@@ -63,6 +64,7 @@ POST    /v1/source-alerts/{id}/acknowledge      alerts:ack           mark an ale
 
 from __future__ import annotations
 
+import hashlib
 from dataclasses import asdict
 from datetime import date
 from typing import Any
@@ -711,13 +713,36 @@ def verify_run(
 _PAGE_FILES = {
     "/dashboard": ("index.html", "text/html; charset=utf-8"),
     "/dashboard/app.js": ("app.js", "text/javascript; charset=utf-8"),
+    "/dashboard/lang.js": ("lang.js", "text/javascript; charset=utf-8"),
     "/dashboard/app.css": ("app.css", "text/css; charset=utf-8"),
     "/dashboard/icon.svg": ("icon.svg", "image/svg+xml"),
 }
-_PAGES = {
-    path: (STATIC_DIR.joinpath(name).read_bytes(), media)
-    for path, (name, media) in _PAGE_FILES.items()
-}  # read once at start-up: no path from the request ever touches the file system
+# A page is re-read only when its file changes on disk (one cheap stat per request), so a new
+# release shows up without restarting the browser. The request never chooses the file: only the
+# keys of the fixed table above are looked up.
+_PAGE_CACHE: dict[str, tuple[int, bytes]] = {}
+
+
+def _page_bytes(path: str) -> bytes:
+    file = STATIC_DIR / _PAGE_FILES[path][0]
+    stamp = file.stat().st_mtime_ns
+    cached = _PAGE_CACHE.get(path)
+    if cached is None or cached[0] != stamp:
+        cached = (stamp, file.read_bytes())
+        _PAGE_CACHE[path] = cached
+    return cached[1]
+
+
+def build_id() -> str:
+    """Short fingerprint of the product version and every page file (changes on any release)."""
+    digest = hashlib.sha256(__version__.encode())
+    for path in sorted(_PAGE_FILES):
+        digest.update(_page_bytes(path))
+    return digest.hexdigest()[:12]
+
+
+for _path in _PAGE_FILES:  # fail at start-up, not on the first request, if a page file is missing
+    _page_bytes(_path)
 _LABEL_KEYS = (
     "title",
     "token",
@@ -734,8 +759,7 @@ _LABEL_KEYS = (
 
 
 def _page(path: str) -> Response:
-    body, media = _PAGES[path]
-    return Response(content=body, media_type=media)
+    return Response(content=_page_bytes(path), media_type=_PAGE_FILES[path][1])
 
 
 @router.get("/dashboard", include_in_schema=False)
@@ -746,6 +770,17 @@ def dashboard_page() -> Response:
 @router.get("/dashboard/app.js", include_in_schema=False)
 def dashboard_script() -> Response:
     return _page("/dashboard/app.js")
+
+
+@router.get("/dashboard/lang.js", include_in_schema=False)
+def dashboard_languages() -> Response:
+    return _page("/dashboard/lang.js")
+
+
+@router.get("/dashboard/version", include_in_schema=False)
+def dashboard_version() -> dict[str, str]:
+    """Public and tiny: lets an open page notice that a new release is being served."""
+    return {"version": __version__, "build": build_id()}
 
 
 @router.get("/dashboard/app.css", include_in_schema=False)
@@ -777,6 +812,12 @@ def dashboard(
     data["labels"]["notice.decision_support"] = services.translator.translate(
         "notice.decision_support", locale
     )
+    data["locale"] = locale
+    data["languages"] = [
+        {"tag": loc.tag, "name": loc.native_name, "group": loc.group} for loc in SUPPORTED_LOCALES
+    ]
+    data["version"] = __version__
+    data["build"] = build_id()
     return data
 
 

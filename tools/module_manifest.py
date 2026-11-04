@@ -84,12 +84,27 @@ def _files(paths: tuple[str, ...]) -> list[Path]:
     return sorted(found, key=lambda p: p.relative_to(ROOT).as_posix())
 
 
+# Tools that hand over files (editors, AI assistants, upload pipelines) may embed provenance
+# data in an SVG: a <metadata> block and a c2pa namespace attribute. It does not change what the
+# image shows, so it must not change a module's fingerprint either.
+_SVG_METADATA: Final = re.compile(rb"<metadata\b.*?</metadata>", re.DOTALL)
+_SVG_C2PA_NS: Final = re.compile(rb'\s+xmlns:c2pa="[^"]*"')
+
+
+def _normalised(file: Path) -> bytes:
+    """File bytes with Windows line endings and SVG provenance metadata removed."""
+    data = file.read_bytes().replace(b"\r\n", b"\n")
+    if file.suffix == ".svg":
+        data = _SVG_C2PA_NS.sub(b"", _SVG_METADATA.sub(b"", data))
+    return data
+
+
 def fingerprint(paths: tuple[str, ...]) -> str:
-    """Hash of file names + contents (line endings normalised so Windows and Linux agree)."""
+    """Hash of file names + contents (line endings and SVG provenance metadata normalised)."""
     digest = hashlib.sha256()
     for file in _files(paths):
         digest.update(file.relative_to(ROOT).as_posix().encode("utf-8") + b"\0")
-        digest.update(file.read_bytes().replace(b"\r\n", b"\n") + b"\0")
+        digest.update(_normalised(file) + b"\0")
     return digest.hexdigest()
 
 

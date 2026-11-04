@@ -10,32 +10,32 @@
 <link rel="stylesheet" href="/dashboard/app.css">
 </head>
 <body>
-<a class="skip" href="#main">Skip to content</a>
+<a class="skip" href="#main" data-i="skip">Skip to content</a>
 <div id="signin" class="signin" hidden>
   <form id="signin-form" class="signin-card" autocomplete="off">
     <span class="logo" aria-hidden="true">RG</span>
     <h1 id="signin-title">RegGraph Europe</h1>
-    <p class="muted" id="signin-help">Paste your access token. It stays in this tab's memory only.</p>
-    <label><span id="l-token">Access token</span>
+    <p class="muted" id="signin-help" data-i="signin.help">Paste your access token. It stays in this tab's memory only.</p>
+    <label><span id="l-token" data-i="signin.token">Access token</span>
       <input id="token" type="password" autocomplete="off" spellcheck="false" required></label>
     <p id="signin-error" class="err" role="alert"></p>
-    <button type="submit" class="btn btn-primary" id="load">Open dashboard</button>
+    <button type="submit" class="btn btn-primary" id="load" data-i="signin.open">Open dashboard</button>
   </form>
 </div>
 <div id="app" class="app" hidden>
   <aside class="side">
     <div class="brand"><span class="logo" aria-hidden="true">RG</span>
-      <div><strong id="title">RegGraph Europe</strong><span class="brand-sub">Ecosystem intelligence</span></div></div>
+      <div><strong id="title">RegGraph Europe</strong><span class="brand-sub" data-i="app.tag">Ecosystem intelligence</span></div></div>
     <nav id="nav" aria-label="Main"></nav>
-    <div class="side-foot"><span id="offline" class="badge badge-offline" hidden>OFFLINE</span>
-      <span id="who" class="side-muted"></span></div>
+    <div class="side-foot"><span id="offline" class="badge badge-offline" data-i="off" hidden>OFFLINE</span>
+      <span id="who" class="side-muted"></span><span id="build" class="side-muted build"></span></div>
   </aside>
   <div class="col">
     <header class="bar">
       <div class="search" role="search">
         <svg class="search-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-        <label class="sr-only" for="q">Search entities</label>
-        <input id="q" type="search" placeholder="Search companies or LEI" autocomplete="off"
+        <label class="sr-only" for="q" data-i="search.label">Search entities</label>
+        <input id="q" type="search" placeholder="Search companies or LEI" data-i-ph="search.ph" autocomplete="off"
           role="combobox" aria-expanded="false" aria-controls="q-list" aria-autocomplete="list">
         <kbd class="kbd" aria-hidden="true">/</kbd>
         <ul id="q-list" class="q-list" role="listbox" hidden></ul>
@@ -43,26 +43,40 @@
       <div class="bar-right">
         <div class="pop-wrap">
           <button type="button" id="ccy-btn" class="pill" aria-haspopup="listbox" aria-expanded="false" aria-controls="ccy-pop">
-            <span class="pill-k">Currency</span><strong id="ccy-label">EUR</strong>
+            <span class="pill-k" data-i="ccy.k">Currency</span><strong id="ccy-label">EUR</strong>
             <svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
           <div id="ccy-pop" class="pop" hidden>
-            <label class="sr-only" for="ccy-q">Search currencies</label>
-            <input id="ccy-q" type="search" placeholder="Search currency" autocomplete="off" aria-label="Search currencies">
+            <label class="sr-only" for="ccy-q" data-i="ccy.ph">Search currency</label>
+            <input id="ccy-q" type="search" placeholder="Search currency" data-i-ph="ccy.ph" autocomplete="off">
             <ul id="ccy-list" class="opt-list" role="listbox" aria-label="Currencies"></ul>
-            <p class="pop-note">Amounts are converted with the FX rates on file for the chosen day.</p>
+            <p class="pop-note" data-i="ccy.note">Amounts are converted with the FX rates on file for the chosen day.</p>
+          </div>
+        </div>
+        <div class="pop-wrap">
+          <button type="button" id="lang-btn" class="pill" aria-haspopup="listbox" aria-expanded="false" aria-controls="lang-pop">
+            <svg class="globe" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.2 3 14.8 0 18M12 3c-3 3.2-3 14.8 0 18"/></svg>
+            <span class="pill-k" data-i="lang.k">Language</span><strong id="lang-label">EN</strong>
+            <svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+          <div id="lang-pop" class="pop" hidden>
+            <label class="sr-only" for="lang-q" data-i="lang.ph">Search language</label>
+            <input id="lang-q" type="search" placeholder="Search language" data-i-ph="lang.ph" autocomplete="off">
+            <ul id="lang-list" class="opt-list" role="listbox" aria-label="Languages"></ul>
+            <p class="pop-note" data-i="lang.note">Fully translated: English, Deutsch, Français, Italiano, Español.</p>
           </div>
         </div>
         <div class="pop-wrap">
           <button type="button" id="date-btn" class="pill" aria-haspopup="dialog" aria-expanded="false" aria-controls="date-pop">
-            <span class="pill-k">Data as of</span><strong id="date-label">Today</strong>
+            <span class="pill-k" data-i="date.k">Data as of</span><strong id="date-label">Today</strong>
             <svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
           <div id="date-pop" class="pop" role="dialog" aria-label="Choose the reporting day" hidden>
-            <p class="pop-note first">Show the data as it stood on a past day: positions, FX rates and rules in force then.</p>
+            <p class="pop-note first" data-i="date.note">Show the data as it stood on a past day: positions, FX rates and rules in force then.</p>
             <div id="date-presets" class="opt-list"></div>
-            <label class="date-pick"><span>Pick any day</span><input id="asof" type="date"></label>
+            <label class="date-pick"><span data-i="date.pick">Pick any day</span><input id="asof" type="date"></label>
           </div>
         </div>
-        <button type="button" id="refresh" class="icon-btn" aria-label="Reload data" title="Reload data">
+        <button type="button" id="live" class="live" data-state="on" aria-pressed="true">
+          <span class="live-dot" aria-hidden="true"></span><span id="live-label">Live</span><span id="live-time" class="live-time"></span></button>
+        <button type="button" id="refresh" class="icon-btn" aria-label="Reload data" title="Reload data" data-i-aria="reload" data-i-title="reload">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.5-5.8M20 4v5h-5"/></svg></button>
         <button type="button" id="theme" class="theme" role="switch" aria-checked="true" aria-label="Light theme" title="Light / dark">
           <span class="theme-knob">
@@ -73,8 +87,8 @@
           <button type="button" id="user-btn" class="avatar" aria-haspopup="menu" aria-expanded="false" aria-controls="user-pop" aria-label="Account menu"><span id="avatar-text">RG</span></button>
           <div id="user-pop" class="pop pop-right" role="menu" aria-label="Account" hidden>
             <p class="pop-note first" id="user-name"></p>
-            <button type="button" id="print" class="menu-item" role="menuitem">Print or save as PDF</button>
-            <button type="button" id="signout" class="menu-item" role="menuitem">Sign out</button>
+            <button type="button" id="print" class="menu-item" role="menuitem" data-i="print">Print or save as PDF</button>
+            <button type="button" id="signout" class="menu-item" role="menuitem" data-i="signout">Sign out</button>
           </div>
         </div>
       </div>
@@ -86,6 +100,7 @@
 </div>
 <div id="drawer-root"></div>
 <div id="toasts" class="toasts" role="status" aria-live="polite"></div>
+<script src="/dashboard/lang.js" defer></script>
 <script src="/dashboard/app.js" defer></script>
 </body>
 </html>
