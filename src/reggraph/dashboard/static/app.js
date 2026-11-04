@@ -588,6 +588,31 @@ PAGES.overview = async () => {
     g.append(card(t("c.gn"), pairBars(latest.slice(0, 5).map((r) => ({ name: words(r.scenario_key), a: Number(r.gross_loss), b: Number(r.net_loss), aText: money(r.gross_loss), bText: money(r.net_loss),
       flag: r.breaches > 0 ? t("st.breach", { n: r.breaches }) : "", href: "#/stress/" + r.run_id })), t("th.gross"), t("th.net"), 3, 2), "span-5", null, t("c.gn.s")));
   }
+  if (ok("exposure")) {
+    // more pictures from the same two data sets: who is owed, who owes, how a loss shrinks, key ratios
+    const sumBy = (edges, pick) => { const m = {}; for (const e of edges) { const k = pick(e); if (k) m[k] = (m[k] || 0) + (Number(e.total) || 0); } return Object.entries(m).sort((p, q) => q[1] - p[1]); };
+    const moneyBars = (rows, href) => { const m = Math.max(1, ...rows.map((r) => r[1])), tot = rows.reduce((a, r) => a + r[1], 0) || 1;
+      return rows.length ? bars(rows.slice(0, 6).map((r, i) => ({ name: r[2] || r[0], text: money(r[1]) + " · " + ((r[1] / tot) * 100).toFixed(0) + "%", ratio: r[1] / m, color: i, href: href ? href(r[0]) : undefined }))) : h("p", { class: "empty", text: t("r.empty") }); };
+    g.append(lazy(t("c.bc"), () => edgesP, (d) => moneyBars(sumBy(d.edges, (e) => (S.ents.get(e.holder_lei) || {}).jurisdiction), (c) => "#/entities?jur=" + enc(c)), { class: "span-4", sub: t("c.bc.s") }));
+    g.append(lazy(t("c.bt"), () => edgesP, (d) => moneyBars(sumBy(d.edges, (e) => typeOf(e.counterparty_lei)).map((r) => [r[0], r[1], word(r[0])]), (k) => "#/entities?type=" + enc(k)), { class: "span-4", sub: t("c.bt.s") }));
+    g.append(lazy(t("c.lend"), () => edgesP, (d) => moneyBars(sumBy(d.edges, (e) => e.holder_lei).map((r) => [r[0], r[1], nm(r[0])]), (l) => "#/entity/" + enc(l) + "/exposure"), { class: "span-4", sub: t("c.lend.s") }));
+    g.append(lazy(t("c.wf"), () => runP, (d) => {
+      const tt = d.result.totals, base = Math.max(1, Number(tt.exposure)), mc = (v) => moneyIn(v, d.result.currency);
+      return h("div", null, bars([{ name: t("wf.exp"), text: mc(tt.exposure), ratio: 1, color: 0 }, { name: t("wf.gross"), text: mc(tt.gross_loss), ratio: Number(tt.gross_loss) / base, color: 2 },
+        { name: t("wf.ins"), text: mc(tt.insurance_recovery), ratio: Number(tt.insurance_recovery) / base, color: 1 }, { name: t("wf.net"), text: mc(tt.net_loss), ratio: Number(tt.net_loss) / base, color: 3 }]),
+        h("p", { class: "muted small", text: t("wf.note", { scn: words(d.run.scenario_key) }) }));
+    }, { class: "span-6", sub: t("c.wf.s") }));
+    g.append(lazy(t("c.rat"), () => Promise.all([edgesP.catch(() => null), runP.catch(() => null)]), ([ed, run]) => {
+      const rows = [], tot = ed ? ed.edges.reduce((a, e) => a + (Number(e.total) || 0), 0) : 0;
+      if (top.length) rows.push({ name: t("rat.top"), p: top.reduce((a, r) => a + Number(r.share_percent), 0) });
+      if (ed && tot > 0) rows.push({ name: t("rat.cross"), p: (sumBy(ed.edges, (e) => ((S.ents.get(e.holder_lei) || {}).jurisdiction !== (S.ents.get(e.counterparty_lei) || {}).jurisdiction ? "x" : "")).reduce((a, r) => a + r[1], 0) / tot) * 100 });
+      const tt = run && run.result ? run.result.totals : null;
+      if (tt && Number(tt.gross_loss) > 0) rows.push({ name: t("rat.ins"), p: (Number(tt.insurance_recovery) / Number(tt.gross_loss)) * 100 });
+      if (tt && Number(tt.exposure) > 0) rows.push({ name: t("rat.loss"), p: (Number(tt.net_loss) / Number(tt.exposure)) * 100 });
+      if (run && run.result) { const hb = run.result.holders.filter((x) => Number(x.capital_buffer) > 0); if (hb.length) rows.push({ name: t("rat.cover"), p: (hb.filter((x) => !x.breach).length / hb.length) * 100 }); }
+      return rows.length ? bars(rows.map((r, i) => ({ name: r.name, text: r.p.toFixed(0) + "%", ratio: r.p / 100, color: i }))) : h("p", { class: "empty", text: t("r.empty") });
+    }, { class: "span-6", sub: t("c.rat.s") }));
+  }
   if (ok("stress")) g.append(card(t("c.str"), table({ cols: [{ title: t("th.scn"), get: (r) => r.scenario_key, render: (r) => words(r.scenario_key) }, { title: t("th.gross"), num: true, get: (r) => r.gross_loss, render: (r) => money(r.gross_loss) },
     { title: t("th.net"), num: true, get: (r) => r.net_loss, render: (r) => money(r.net_loss) }, { title: t("th.status"), get: (r) => r.breaches, render: (r) => (r.breaches > 0 ? chip(t("st.breach", { n: r.breaches }), "bad") : chip(t("st.ok"), "ok")) }],
   rows: sec.stress.recent_runs, href: (r) => "#/stress/" + r.run_id, search: false, pageSize: 6 }), "span-7", null, t("c.str.s")));

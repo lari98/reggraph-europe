@@ -269,6 +269,22 @@ def test_overview_pictures_map_gauge_grid_and_bars(
     assert page.locator("svg.xgrid rect").count() >= 4
     assert page.locator(".pairs .pair-i").count() >= 2
     assert page.locator(".an li").count() >= 3
+    # 0.7.0 second batch: by country, by type, lenders, exposure-to-loss steps, key ratios
+    for title in (
+        "Money owed to institutions, by country",
+        "Who owes the money",
+        "Biggest lenders",
+        "From exposure to loss",
+        "Key ratios at a glance",
+    ):
+        assert page.locator(".ov .card h2", has_text=title).count() == 1, title
+    assert (
+        page.locator(".ov .card h2", has_text="Key ratios at a glance")
+        .locator("xpath=ancestor::section")
+        .locator(".bar-i")
+        .count()
+        >= 3
+    )
     # nothing sticks out of its card
     over = page.evaluate(
         "[...document.querySelectorAll('.ov .card')].filter(c => c.scrollWidth > c.clientWidth + 1).length"

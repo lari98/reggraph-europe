@@ -45,11 +45,11 @@
       "version": "0.2.0"
     },
     "dashboard": {
-      "fingerprint": "a957e8214c311522b944df527c7b09bde9802aa8aac678fa1d6833b8d3541d63",
+      "fingerprint": "c4f0b496c72ac4bc8db6191b6b559e17da7b6517ae8df0a91ae0e4cec9aa918e",
       "paths": [
         "src/reggraph/dashboard"
       ],
-      "version": "0.6.0"
+      "version": "0.6.1"
     },
     "exposure": {
       "fingerprint": "4c270759f2dde8b134913cf73d14983c96381b867370266b5ef30e7dca315ce3",

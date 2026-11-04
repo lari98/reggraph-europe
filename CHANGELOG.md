@@ -9,6 +9,7 @@ module also has its own version in `module_versions.json`. Format follows
 Newest first. Written automatically by `python tools/module_manifest.py bump ...`.
 
 <!-- module-log -->
+- **dashboard 0.6.1** (2026-11-04, patch): Overview: five more cards (lender country, borrower type, lenders, exposure-to-loss, key ratios)
 - **app-shell 0.7.0** (2026-11-04, minor): Release 0.7.0: richer stakeholder Overview
 - **dashboard 0.6.0** (2026-11-04, minor): Overview 0.7.0: offline Europe tile map, concentration gauge, country-to-country grid, gross vs net and capital-buffer bars, rules donut, plain-language analysis
 - **dashboard 0.5.1** (2026-11-04, patch): Language menu rows no longer clipped; German soft hyphen in a KPI title
@@ -64,6 +65,7 @@ Newest first. Written automatically by `python tools/module_manifest.py bump ...
 
 - Overview gains an offline Europe tile map (one square per country, darker = more institutions, click to list them), a concentration gauge (HHI bands), a country-to-country exposure grid (home vs cross-border), gross vs net loss bars per scenario, capital buffer vs loss per bank, a rules status donut and a "What this means" box with plain sentences.
 - All pictures are drawn as SVG in the page: no map service, no tiles, no external call; they work offline and under the strict page policy.
+- Five more cards: money owed by lender country, borrowers by institution type, biggest lenders, exposure-to-loss steps for the latest stress test, and a key-ratios panel.
 - Every new text is translated in English, German, French, Italian and Spanish.
 - Tests: map, gauge, grid, bars, analysis, overflow, German phone layout.
 
