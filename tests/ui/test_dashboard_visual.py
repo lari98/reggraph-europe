@@ -239,13 +239,59 @@ def test_overview_layout_at_every_size(
     assert page.problems == []
     assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
     assert page.locator(".kpi").count() == 6
-    assert page.locator("svg.donut").count() == 2 and page.locator("svg.net").count() == 1
+    assert page.locator("svg.donut").count() == 3 and page.locator("svg.net").count() == 1
     widths = page.evaluate(
         "[...document.querySelectorAll('.bar-i .fill')].map(e => e.getBoundingClientRect().width)"
     )
     assert widths and all(w > 0 for w in widths)
     assert page.evaluate("location.hash") == "#/overview"  # the token is gone from the address bar
     assert page.locator("#offline").is_visible()
+    page.context.close()
+
+
+@pytest.mark.parametrize("scheme", ["light", "dark"])
+def test_overview_pictures_map_gauge_grid_and_bars(
+    browser: Any, server: dict[str, str], scheme: str
+) -> None:
+    """0.7.0: the offline tile map, gauge, country grid, paired bars and plain-language analysis."""
+    page = open_page(browser, server["admin"], size=(1440, 900), scheme=scheme)
+    page.wait_for_selector(".kpi")
+    settle(page)
+    page.wait_for_timeout(900)
+    assert page.problems == []
+    assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
+    # map: one tile per country, populated tiles link to the register filtered by that country
+    assert page.locator("svg.geomap .tile-r").count() >= 30
+    link = page.locator("svg.geomap a.tile").first
+    assert "#/entities?jur=" in (link.get_attribute("href") or "")
+    # gauge, grid and paired bars are drawn; analysis has several readable sentences
+    assert page.locator("svg.gauge .needle").count() == 1
+    assert page.locator("svg.xgrid rect").count() >= 4
+    assert page.locator(".pairs .pair-i").count() >= 2
+    assert page.locator(".an li").count() >= 3
+    # nothing sticks out of its card
+    over = page.evaluate(
+        "[...document.querySelectorAll('.ov .card')].filter(c => c.scrollWidth > c.clientWidth + 1).length"
+    )
+    assert over == 0
+    # clicking a country opens the register filtered to it
+    link.click()
+    _wait(page, "location.hash.startsWith('#/entities')", "entities page")
+    assert "jur=" in page.evaluate("location.hash")
+    page.context.close()
+
+
+def test_overview_pictures_are_translated_and_phone_safe(
+    browser: Any, server: dict[str, str]
+) -> None:
+    page = open_page(browser, server["admin"], size=(390, 844), locale="de-DE")
+    page.wait_for_selector(".kpi")
+    settle(page)
+    page.wait_for_timeout(900)
+    assert page.problems == []
+    assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
+    assert "Wo die Institute sitzen" in page.inner_text(".ov")
+    assert "Was das bedeutet" in page.inner_text(".an-card")
     page.context.close()
 
 

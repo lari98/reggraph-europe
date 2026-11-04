@@ -9,6 +9,8 @@ module also has its own version in `module_versions.json`. Format follows
 Newest first. Written automatically by `python tools/module_manifest.py bump ...`.
 
 <!-- module-log -->
+- **app-shell 0.7.0** (2026-11-04, minor): Release 0.7.0: richer stakeholder Overview
+- **dashboard 0.6.0** (2026-11-04, minor): Overview 0.7.0: offline Europe tile map, concentration gauge, country-to-country grid, gross vs net and capital-buffer bars, rules donut, plain-language analysis
 - **dashboard 0.5.1** (2026-11-04, patch): Language menu rows no longer clipped; German soft hyphen in a KPI title
 - **api 0.7.2** (2026-11-04, patch): Doc table line length (second pass)
 - **api 0.7.1** (2026-11-04, patch): Doc table line length
@@ -57,6 +59,13 @@ Newest first. Written automatically by `python tools/module_manifest.py bump ...
 - **storage 0.2.0** (2026-11-03, minor): Migration 2: entity_versions and ownership_links with immutability triggers
 - **security 0.2.0** (2026-11-03, minor): Add registry:read and registry:write permissions to the role matrix
 - **registry 0.1.0** (2026-11-03, new): Phase 2: LEI-keyed entities, licences, ownership links, groups, entity-to-rule mapping
+
+## [0.7.0] - Stakeholder Overview with maps and analysis
+
+- Overview gains an offline Europe tile map (one square per country, darker = more institutions, click to list them), a concentration gauge (HHI bands), a country-to-country exposure grid (home vs cross-border), gross vs net loss bars per scenario, capital buffer vs loss per bank, a rules status donut and a "What this means" box with plain sentences.
+- All pictures are drawn as SVG in the page: no map service, no tiles, no external call; they work offline and under the strict page policy.
+- Every new text is translated in English, German, French, Italian and Spanish.
+- Tests: map, gauge, grid, bars, analysis, overflow, German phone layout.
 
 ## [0.6.0] - Live updates, language menu, plain-language overview
 

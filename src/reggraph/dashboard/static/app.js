@@ -409,6 +409,91 @@ function kpiCard(cls, icon, title, value, sub, href, full) {
     h("div", { class: "v", text: value, title: full || value }), h("div", { class: "s", text: sub }));
 }
 
+// ---------------------------------------------------------------- Overview pictures (0.7.0)
+// All drawn here as SVG: no map service, no tiles, no outside call, so they work offline and under the
+// strict page policy. The Europe "map" is a tile grid: one square per country, roughly where it lies.
+const GEO = { NO: [4, 0], SE: [5, 0], FI: [6, 0], EE: [7, 0], IS: [1, 1], DK: [4, 1], LV: [7, 1], IE: [1, 2], GB: [2, 2], NL: [3, 2], DE: [4, 2], PL: [5, 2], LT: [7, 2],
+  FR: [2, 3], BE: [3, 3], LU: [4, 3], CZ: [5, 3], SK: [6, 3], PT: [0, 4], ES: [1, 4], CH: [3, 4], AT: [4, 4], SI: [5, 4], HU: [6, 4], RO: [7, 4],
+  IT: [4, 5], HR: [5, 5], RS: [6, 5], BG: [7, 5], MT: [4, 6], GR: [7, 6], CY: [8, 6] };
+const geoKey = (c) => (c === "UK" ? "GB" : c);
+function geoMap(byJur) {
+  const cnt = {}, raw = {};
+  for (const [k, v] of Object.entries(byJur)) { cnt[geoKey(k)] = (cnt[geoKey(k)] || 0) + v; raw[geoKey(k)] = k; }
+  const max = Math.max(1, ...Object.values(cnt));
+  const extra = Object.keys(cnt).filter((k) => !GEO[k]).sort();
+  const STEP = 50, W = 9 * STEP, H = (extra.length ? 8 : 7) * STEP;
+  const svg = s("svg", { viewBox: "0 0 " + W + " " + H, class: "geomap", role: "group", "aria-label": t("c.map") });
+  const place = (code, col, row) => {
+    const n = cnt[code] || 0, r = n / max, x = col * STEP, y = row * STEP;
+    const kids = [s("title", {}, code + ": " + t("map.tip", { n: num(n) })),
+      s("rect", { x, y, width: 46, height: 46, rx: 8, class: "tile-r", "fill-opacity": n ? (0.2 + 0.8 * Math.pow(r, 0.6)).toFixed(2) : "0.08" }),
+      s("text", { x: x + 23, y: y + 21, class: "tile-c" + (r > 0.55 ? " on" : "") }, code),
+      s("text", { x: x + 23, y: y + 37, class: "tile-n" + (r > 0.55 ? " on" : "") }, n ? String(n) : "·")];
+    svg.append(n ? s("a", { href: "#/entities?jur=" + enc(raw[code]), class: "tile" }, ...kids) : s("g", { class: "tile tile-0" }, ...kids));
+  };
+  for (const [code, [c, r]] of Object.entries(GEO)) place(code, c, r);
+  extra.forEach((code, i) => place(code, i, 7));
+  const scale = h("div", { class: "scale" }, h("span", { text: t("map.few") }), h("span", { class: "ramp" }), h("span", { text: t("map.many") }));
+  return h("div", { class: "geo" }, svg, scale);
+}
+
+// Half-circle gauge: how concentrated is the exposure? Zones follow the usual HHI bands (1,500 / 2,500).
+function gauge(hhi) {
+  const MAXV = 5000, R = 78, cx = 100, cy = 98, v = Math.min(MAXV, hhi);
+  const pt = (val, rad) => { const a = Math.PI * (1 - val / MAXV); return [cx + rad * Math.cos(a), cy - rad * Math.sin(a)]; };
+  const arc = (a, b) => { const p = pt(a, R), q = pt(b, R); return "M" + p[0].toFixed(1) + " " + p[1].toFixed(1) + " A" + R + " " + R + " 0 0 1 " + q[0].toFixed(1) + " " + q[1].toFixed(1); };
+  const level = hhi < 1500 ? "ok" : hhi < 2500 ? "warn" : "bad";
+  const n = pt(v, R - 14);
+  const svg = s("svg", { viewBox: "0 0 200 126", class: "gauge", role: "img", "aria-label": t("gauge.alt", { v: num(Math.round(hhi)), l: t("gauge." + level) }) },
+    s("path", { d: arc(0, 1500), class: "gz gz-ok" }), s("path", { d: arc(1500, 2500), class: "gz gz-warn" }), s("path", { d: arc(2500, MAXV), class: "gz gz-bad" }),
+    s("line", { x1: cx, y1: cy, x2: n[0].toFixed(1), y2: n[1].toFixed(1), class: "needle" }), s("circle", { cx, cy, r: 6, class: "hub" }),
+    s("text", { x: cx, y: 120, class: "g-val" }, num(Math.round(hhi))));
+  return h("div", { class: "gauge-wrap" }, svg,
+    h("div", { class: "chips" }, chip(t("gauge." + level), level), h("span", { class: "muted", text: t("gauge.scale") })));
+}
+
+// Loss before and after insurance (or loss against capital): two thin bars per row, same scale.
+function pairBars(rows, ka, kb, ca, cb) {
+  const max = Math.max(1, ...rows.flatMap((r) => [r.a, r.b]));
+  const key = h("div", { class: "pair-key" }, h("span", null, h("i", { class: "sw s" + ca }), ka), h("span", null, h("i", { class: "sw s" + cb }), kb));
+  const ul = h("ul", { class: "pairs" });
+  for (const r of rows) {
+    const line = (label, val, text, c) => {
+      const f = h("div", { class: "fill s" + c });
+      requestAnimationFrame(() => { f.style.width = (val > 0 ? Math.max(2, (val / max) * 100) : 0).toFixed(1) + "%"; });
+      return h("div", { class: "pr" }, h("span", { class: "pk", text: label }), h("div", { class: "track" }, f), h("span", { class: "pv", text }));
+    };
+    const inner = [h("div", { class: "row" }, h("span", { class: "lbl", text: r.name }), r.flag ? chip(r.flag, "bad") : null), line(ka, r.a, r.aText, ca), line(kb, r.b, r.bText, cb)];
+    ul.append(h("li", { class: "pair-i" }, r.href ? h("a", { href: r.href, title: r.name }, inner) : h("div", { title: r.name }, inner)));
+  }
+  return h("div", null, key, ul);
+}
+
+// Country-to-country grid: row = country of the institution that is owed money, column = country of the
+// one that owes it. Blue on the diagonal is money that stays at home, amber is money that crosses a border.
+function crossGrid(edges) {
+  const tot = {}, grid = {};
+  for (const e of edges) {
+    const a = (S.ents.get(e.holder_lei) || {}).jurisdiction, b = (S.ents.get(e.counterparty_lei) || {}).jurisdiction, v = Number(e.total) || 0;
+    if (!a || !b) continue;
+    grid[a + ">" + b] = (grid[a + ">" + b] || 0) + v; tot[a] = (tot[a] || 0) + v; tot[b] = (tot[b] || 0) + v;
+  }
+  const js = Object.keys(tot).sort((x, y) => tot[y] - tot[x]).slice(0, 6);
+  if (!js.length) return h("p", { class: "empty", text: t("r.empty") });
+  const L = 34, T = 22, CW = 60, CH = 30, max = Math.max(1, ...Object.values(grid));
+  const svg = s("svg", { viewBox: "0 0 " + (L + js.length * CW) + " " + (T + js.length * CH), class: "xgrid", role: "img", "aria-label": t("c.mx") });
+  js.forEach((c, i) => {
+    svg.append(s("text", { x: L + i * CW + CW / 2, y: 15, class: "xg-h" }, c), s("text", { x: L - 6, y: T + i * CH + CH / 2 + 4, class: "xg-h xg-l" }, c));
+  });
+  js.forEach((a, r) => js.forEach((b, c) => {
+    const v = grid[a + ">" + b] || 0;
+    svg.append(s("rect", { x: L + c * CW + 1, y: T + r * CH + 1, width: CW - 2, height: CH - 2, rx: 5, class: a === b ? "xg-home" : "xg-cross", "fill-opacity": v ? (0.15 + 0.85 * Math.sqrt(v / max)).toFixed(2) : "0.06" }, s("title", {}, a + " → " + b + ": " + money(v))));
+    if (v) svg.append(s("text", { x: L + c * CW + CW / 2, y: T + r * CH + CH / 2 + 4, class: "xg-v" + (v / max > 0.5 ? " on" : "") }, money(v)));
+  }));
+  return h("div", null, svg, h("div", { class: "pair-key" }, h("span", null, h("i", { class: "sw sw-home" }), t("mx.home")), h("span", null, h("i", { class: "sw sw-cross" }), t("mx.cross"))),
+    h("p", { class: "muted small", text: t("mx.key") }));
+}
+
 // Overview: written for someone who has never seen the platform. Top to bottom: one sentence on how
 // things stand, what needs attention, six headline numbers with a plain-language line each, a
 // one-minute guide, then the pictures. Every box links to the detail behind it.
@@ -429,6 +514,10 @@ PAGES.overview = async () => {
   if (review) items.push({ tone: "warn", text: t("ov.a.review", { n: review }), href: "#/rules" });
   if (share >= 25) items.push({ tone: "warn", text: t("ov.a.conc", { name: top[0].name || top[0].lei, share: share.toFixed(1) }), href: "#/entity/" + enc(top[0].lei) + "/exposure" });
   const level = breaches ? "bad" : items.length ? "warn" : "ok";
+  const edgesP = ok("exposure") ? api("/v1/exposures/edges?" + qs()) : Promise.resolve(null);
+  const runs0 = ok("stress") ? sec.stress.recent_runs || [] : [];
+  const runP = runs0.length ? api("/v1/stress/runs/" + runs0[0].run_id) : Promise.resolve(null);
+  const hhi = top.reduce((a, r) => a + Number(r.share_percent) ** 2, 0);       // lower bound: top positions only
   const facts = ok("registry") && ok("exposure") && ok("insurance")
     ? t("ov.facts", { ents: num(sec.registry.entities), jur: Object.keys(sec.registry.by_jurisdiction).length, exp: money(sec.exposure.total), ins: num(sec.insurance.contracts) }) : "";
 
@@ -454,6 +543,26 @@ PAGES.overview = async () => {
   if (ok("connectors")) kp.append(kpiCard("k6", ICON.alr, t("kpi.alr"), num(alerts), t("kpi.alr.p"), "#/data"));
   kp.classList.add("n" + kp.children.length);
 
+  // "What this means": a few sentences a non-specialist can read without any glossary.
+  const analysis = card(t("c.an"), h("div", { class: "an-body" }), "an-card", null, t("c.an.s"));
+  Promise.all([edgesP.catch(() => null), runP.catch(() => null)]).then(([ed, run]) => {
+    const lines = [];
+    if (top.length) lines.push({ tone: hhi >= 2500 ? "bad" : hhi >= 1500 ? "warn" : "ok", text: t("an.conc", { name: top[0].name || top[0].lei, share: share.toFixed(1), lvl: t("gauge." + (hhi < 1500 ? "ok" : hhi < 2500 ? "warn" : "bad")) }) });
+    if (ed && ed.edges.length) {
+      let all = 0, cross = 0;
+      for (const e of ed.edges) {
+        const a = (S.ents.get(e.holder_lei) || {}).jurisdiction, b = (S.ents.get(e.counterparty_lei) || {}).jurisdiction, v = Number(e.total) || 0;
+        if (a && b) { all += v; if (a !== b) cross += v; }
+      }
+      if (all > 0) lines.push({ tone: cross / all > 0.5 ? "warn" : "ok", text: t("an.cross", { p: ((cross / all) * 100).toFixed(0) }) });
+    }
+    const tot = run && run.result ? run.result.totals : null;
+    if (tot && Number(tot.gross_loss) > 0) lines.push({ tone: "ok", text: t("an.ins", { p: ((Number(tot.insurance_recovery) / Number(tot.gross_loss)) * 100).toFixed(0), scn: words(run.run.scenario_key) }) });
+    if (tot) lines.push({ tone: tot.breaches ? "bad" : "ok", text: t(tot.breaches ? "an.buf.bad" : "an.buf.ok", { n: tot.breaches }) });
+    if (!lines.length) lines.push({ tone: "ok", text: t("r.empty") });
+    analysis.querySelector(".an-body").replaceChildren(h("ul", { class: "an" }, lines.map((l) => h("li", { class: "an-" + l.tone }, h("span", { class: "dot" }), h("span", { text: l.text })))));
+  });
+
   const guide = h("details", { class: "guide card" }, h("summary", null, h("span", { class: "guide-ic", "aria-hidden": "true", text: "?" }), h("span", { text: t("guide.t") })),
     h("div", { class: "guide-grid" }, [1, 2, 3, 4, 5].map((i) => h("div", { class: "g" }, h("strong", { text: t("g." + i + "t") }), h("p", { text: t("g." + i + "d") })))),
     h("p", { class: "muted guide-note", text: t("guide.note") }));
@@ -467,21 +576,35 @@ PAGES.overview = async () => {
   if (ok("insurance")) g.append(card(t("c.line"), donut(Object.entries(sec.insurance.by_line).sort((a, b) => b[1] - a[1]), sec.insurance.contracts, (x) => "#/insurance?line=" + enc(x)), "span-4", null, t("c.line.s")));
   if (ok("exposure")) {
     const m = Math.max(1, ...top.map((r) => Number(r.amount)));
-    g.append(lazy(t("c.net"), () => api("/v1/exposures/edges?" + qs()), (d) => network({ nodes: Object.fromEntries([...new Set(d.edges.flatMap((e) => [e.holder_lei, e.counterparty_lei]))].map((x) => [x, 1])), edges: d.edges }, { circle: true }), { class: "span-8", sub: t("c.net.s") }));
+    if (ok("registry")) g.append(card(t("c.map"), geoMap(sec.registry.by_jurisdiction), "span-7", null, t("c.map.s")));
+    if (top.length) g.append(card(t("c.conc"), h("div", null, gauge(hhi), h("p", { class: "muted small", text: t("c.conc.d") })), "span-5", null, t("c.conc.s")));
+    g.append(lazy(t("c.net"), () => edgesP, (d) => network({ nodes: Object.fromEntries([...new Set(d.edges.flatMap((e) => [e.holder_lei, e.counterparty_lei]))].map((x) => [x, 1])), edges: d.edges }, { circle: true }), { class: "span-8", sub: t("c.net.s") }));
     g.append(card(t("c.top"), bars(top.map((r, i) => ({ name: r.name || r.lei, text: money(r.amount) + " · " + Number(r.share_percent).toFixed(1) + "%", ratio: Number(r.amount) / m, href: "#/entity/" + enc(r.lei) + "/exposure", color: i }))), "span-4", null, t("c.top.s")));
+  }
+  if (ok("exposure")) g.append(lazy(t("c.mx"), () => edgesP, (d) => crossGrid(d.edges), { class: "span-7", sub: t("c.mx.s") }));
+  if (ok("stress")) {
+    const seen = new Set(), latest = [];
+    for (const r of runs0) if (!seen.has(r.scenario_key)) { seen.add(r.scenario_key); latest.push(r); }
+    g.append(card(t("c.gn"), pairBars(latest.slice(0, 5).map((r) => ({ name: words(r.scenario_key), a: Number(r.gross_loss), b: Number(r.net_loss), aText: money(r.gross_loss), bText: money(r.net_loss),
+      flag: r.breaches > 0 ? t("st.breach", { n: r.breaches }) : "", href: "#/stress/" + r.run_id })), t("th.gross"), t("th.net"), 3, 2), "span-5", null, t("c.gn.s")));
   }
   if (ok("stress")) g.append(card(t("c.str"), table({ cols: [{ title: t("th.scn"), get: (r) => r.scenario_key, render: (r) => words(r.scenario_key) }, { title: t("th.gross"), num: true, get: (r) => r.gross_loss, render: (r) => money(r.gross_loss) },
     { title: t("th.net"), num: true, get: (r) => r.net_loss, render: (r) => money(r.net_loss) }, { title: t("th.status"), get: (r) => r.breaches, render: (r) => (r.breaches > 0 ? chip(t("st.breach", { n: r.breaches }), "bad") : chip(t("st.ok"), "ok")) }],
   rows: sec.stress.recent_runs, href: (r) => "#/stress/" + r.run_id, search: false, pageSize: 6 }), "span-7", null, t("c.str.s")));
   if (ok("rules")) {
     const by = sec.rules.versions_by_status || {};
-    g.append(card(t("c.rul"), h("div", null, h("div", { class: "chips" }, Object.entries(by).map(([k, n]) => chip(word(k) + " " + n, k === "approved" ? "ok" : "info")),
+    g.append(card(t("c.rul"), h("div", null, donut(Object.entries(by).sort((a, b) => b[1] - a[1]), Object.values(by).reduce((a, b) => a + b, 0)), h("div", { class: "chips" }, Object.entries(by).map(([k, n]) => chip(word(k) + " " + n, k === "approved" ? "ok" : "info")),
       chip(t("r.review", { n: review }), review ? "warn" : "ok"), ok("rates") ? chip(t("r.fx", { n: sec.rates.currencies, date: sec.rates.latest_date || "-" }), "info") : null,
       ok("connectors") ? chip(t("r.alerts", { n: alerts }), alerts ? "warn" : "ok") : null),
     h("p", { class: "muted links" }, h("a", { href: "#/rules", text: t("r.lib") }), "  |  ", h("a", { href: "#/data", text: t("r.data") }))), "span-5", null, t("c.rul.s")));
   }
+  if (ok("stress") && runs0.length) g.append(lazy(t("c.buf"), () => runP, (d) => {
+    const hs = d.result.holders.filter((x) => Number(x.capital_buffer) > 0).sort((a, b) => Number(b.net_loss_ratio) - Number(a.net_loss_ratio)).slice(0, 6);
+    return hs.length ? pairBars(hs.map((x) => ({ name: nm(x.holder_lei), a: Number(x.net_loss), b: Number(x.capital_buffer), aText: moneyIn(x.net_loss, d.result.currency), bText: moneyIn(x.capital_buffer, d.result.currency),
+      flag: x.breach ? t("st.breach", { n: 1 }) : "", href: "#/entity/" + enc(x.holder_lei) })), t("buf.loss"), t("buf.cap"), 4, 2) : h("p", { class: "empty", text: t("buf.none") });
+  }, { class: "span-12", sub: t("c.buf.s") }));
   for (const k of dash.omitted) g.append(card(label(k, k), h("p", { class: "lock", text: t("unavail") }), "span-4"));
-  return h("div", { class: "grid ov" }, h("div", { class: "span-12" }, hero), h("div", { class: "span-12" }, kp), h("div", { class: "span-12" }, guide), [...g.children]);
+  return h("div", { class: "grid ov" }, h("div", { class: "span-12" }, hero), h("div", { class: "span-12" }, kp), h("div", { class: "span-12" }, analysis), h("div", { class: "span-12" }, guide), [...g.children]);
 };
 
 PAGES.entities = async (_a, q) => {

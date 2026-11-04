@@ -10,4 +10,4 @@ binding instructions and never replaces a supervisor (Pitch Pack, section 6).
 __all__ = ["__version__"]
 
 # Product version. Bumped only by ``tools/module_manifest.py release``.
-__version__ = "0.6.0"
+__version__ = "0.7.0"

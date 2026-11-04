@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "reggraph-europe"
-version = "0.6.0"
+version = "0.7.0"
 description = "RegGraph Europe - EU-Swiss financial resilience and regulatory intelligence platform (decision support)"
 readme = "README.md"
 requires-python = ">=3.11"
