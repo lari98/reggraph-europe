@@ -101,6 +101,10 @@ Registry threats (Phase 2) — tests in `tests/security/test_registry_attacks.py
 | T88 | Demo data mistaken for real data | every demo name carries "(demo)", rates are labelled invented, demo mode is loopback-only | `test_rich_set_is_large_and_weighted_to_dach` |
 | T89 | Demo rule text mistaken for legal advice | rules are labelled "(demo summary)", the page shows a notice, sources link to the official text | `test_rules_page_explains_itself_and_shows_the_pictures`, `test_rules_have_real_references_and_every_status` |
 | T90 | Source link used for script injection or leaking the page | links are rendered only for https URLs with `rel="noopener noreferrer"`; rule text is set with `textContent` | `test_rules_page_explains_itself_and_shows_the_pictures` |
+| T91 | Rule scope used to enumerate the register without the right | `/v1/rules/{key}/scope` needs `rules:read` and `registry:read`; a service account gets 403, no token 401 | `test_rule_scope_refuses_unknown_keys_missing_rights_and_hostile_input` |
+| T92 | Hostile rule key, other tenant, bad date on the scope route | 404/422, no stack trace; tenant isolation gives 404 | `test_rule_scope_refuses_unknown_keys_missing_rights_and_hostile_input` |
+| T93 | Graph or timeline labels used to inject markup | labels set with `textContent`/SVG text only; strict CSP unchanged | `test_rule_network_and_drill_down_to_the_evidence` |
+| T94 | Drill-down unusable on phone or by keyboard | nodes focusable, Enter opens; no horizontal overflow; German texts | `test_rule_drill_down_is_translated_and_phone_safe` |
 | T79 | Unreadable colours / third-party fonts | AA contrast tests, system fonts, CSP `img-src 'self'` | `test_text_colour_pairs_meet_wcag_aa`, `test_fonts_and_shapes` |
 
 Property-based tests (`TestProperties`, Hypothesis, 200 examples each) check that

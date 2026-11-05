@@ -390,6 +390,72 @@ def test_rules_page_is_translated_and_phone_safe(browser: Any, server: dict[str,
     page.context.close()
 
 
+def test_rule_network_and_drill_down_to_the_evidence(browser: Any, server: dict[str, str]) -> None:
+    """0.10.0: network of regulation, rules and institutions; each rule opens graph, timeline, scope."""
+    page = open_page(browser, server["admin"], size=(1440, 900))
+    page.wait_for_selector(".kpi")
+    settle(page)
+    go(page, "rules")
+    page.wait_for_selector("svg.lgraph")
+    settle(page)
+    net = page.locator("svg.lgraph").first
+    assert net.locator(".lg-rule").count() >= 1 and net.locator(".lg-reg").count() >= 1
+    assert net.locator(".lg-edge").count() > net.locator(".lg-rule").count()
+    # hover lights up a connected path and dims the rest; leaving clears it
+    net.locator(".lg-rule").first.hover()
+    assert page.evaluate("document.querySelector('svg.lgraph').classList.contains('hl')")
+    assert net.locator(".lg-edge.on").count() >= 1
+    page.mouse.move(2, 2)
+    assert net.locator(".lg-edge.on").count() == 0
+    # a regulation node lists the rules built on it
+    net.locator(".lg-reg").first.click()
+    _wait(page, "document.querySelector('.drawer .refs li') !== null", "regulation drawer")
+    page.keyboard.press("Escape")
+    page.wait_for_timeout(300)
+    # a rule node opens the rule: connections, institutions in scope, evidence timeline with proofs
+    page.locator("svg.lgraph").first.locator(".lg-rule").first.click()
+    page.wait_for_selector(".rule-panel svg.etl")
+    panel = page.locator(".rule-panel")
+    assert panel.locator("svg.lgraph .lg-inst").count() >= 1
+    assert panel.locator("svg.etl .etl-dot").count() >= 4
+    assert panel.locator("svg.etl .g-today").count() == 1
+    assert (
+        "Evidence timeline" in panel.inner_text()
+        and "Published in the Official Journal" in panel.inner_text()
+    )
+    # the hash of an approval opens the audit entry that proves it
+    panel.locator("button.linklike.mono").first.click()
+    _wait(
+        page, "document.querySelector('.drawer h2').textContent.startsWith('Audit entry')", "audit"
+    )
+    page.keyboard.press("Escape")
+    page.wait_for_timeout(300)
+    # an institution node leads to the institution page
+    page.locator("svg.lgraph").first.locator(".lg-rule").first.click()
+    page.wait_for_selector(".rule-panel svg.etl")
+    page.locator(".rule-panel .lg-inst").first.click()
+    _wait(page, "location.hash.startsWith('#/entity/')", "entity page")
+    assert page.problems == []
+    page.context.close()
+
+
+def test_rule_drill_down_is_translated_and_phone_safe(browser: Any, server: dict[str, str]) -> None:
+    page = open_page(browser, server["admin"], size=(390, 844), locale="de-DE")
+    page.wait_for_selector(".kpi")
+    settle(page)
+    go(page, "rules")
+    page.wait_for_selector("svg.lgraph")
+    settle(page)
+    page.locator("svg.lgraph").first.locator(".lg-rule").first.focus()
+    page.keyboard.press("Enter")  # keyboard users can drill in too
+    page.wait_for_selector(".rule-panel svg.etl")
+    assert "Nachweis-Zeitleiste" in page.inner_text(".rule-panel")
+    assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
+    assert page.evaluate("document.querySelector('.drawer').scrollWidth <= window.innerWidth")
+    assert page.problems == []
+    page.context.close()
+
+
 def _admin_token(server: dict[str, str]) -> str:
     return server["admin"].split("#token=", 1)[1]
 

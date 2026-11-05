@@ -12,7 +12,18 @@ from fastapi.testclient import TestClient
 
 from reggraph.core.clock import FixedClock
 from reggraph.security.rbac import Principal, Role
-from tests.phase3 import BANK, CORP, CORP2, INS, batch, contract, pos, put_contract, register_all
+from tests.phase3 import (
+    BANK,
+    BANK2,
+    CORP,
+    CORP2,
+    INS,
+    batch,
+    contract,
+    pos,
+    put_contract,
+    register_all,
+)
 from tests.phase5 import ECB_URL, FEED_URL, FakeFetcher, celex_link, client_with, ecb_xml, rss
 
 
@@ -264,3 +275,65 @@ def test_the_notice_follows_the_language_header(world: TestClient) -> None:
     assert fr["locale"] == "fr" and fr["labels"]["notice.decision_support"] != en
     junk = world.get("/v1/dashboard", headers={**admin, "Accept-Language": "xx-<script>"}).json()
     assert junk["locale"] == "en"  # an unknown or hostile tag falls back to English
+
+
+def _approved_rule(client: TestClient, key: str = "EU.CRR3.CET1", **over: object) -> None:
+    """Propose a rule as an analyst and approve it as a compliance officer."""
+    from tests.conftest import rule_payload
+
+    body = rule_payload(key, **over)
+    made = client.post(
+        "/v1/rules",
+        headers=hdr(client, Role.ANALYST),
+        json={"rule": body, "change_summary": "t"},
+    )
+    assert made.status_code == 201, made.text
+    done = client.post(
+        f"/v1/rules/{key}/versions/1/approve",
+        headers=hdr(client, Role.COMPLIANCE_OFFICER, user="omar"),
+        json={},
+    )
+    assert done.status_code == 200, done.text
+
+
+def test_rule_scope_lists_the_institutions_a_rule_covers(world: TestClient) -> None:
+    """0.10.0: the rule drill-down asks which register entries a rule applies to."""
+    _approved_rule(world, consolidation="individual", jurisdictions=["DE"], entity_types=["bank"])
+    res = world.get(
+        "/v1/rules/EU.CRR3.CET1/scope",
+        params={"on": "2026-03-02"},
+        headers=hdr(world, Role.ANALYST),
+    )
+    assert res.status_code == 200, res.text
+    body = res.json()
+    assert body["rule_key"] == "EU.CRR3.CET1" and body["checked"] >= 7
+    assert {c["lei"] for c in body["covered"]} == {BANK, BANK2}
+    assert all(c["entity_type"] == "bank" and c["version_no"] == 1 for c in body["covered"])
+    # before the rule applies nobody is covered
+    early = world.get(
+        "/v1/rules/EU.CRR3.CET1/scope",
+        params={"on": "2020-01-01"},
+        headers=hdr(world, Role.ANALYST),
+    ).json()
+    assert early["covered"] == []
+
+
+def test_rule_scope_refuses_unknown_keys_missing_rights_and_hostile_input(
+    world: TestClient,
+) -> None:
+    _approved_rule(world)
+    analyst = hdr(world, Role.ANALYST)
+    assert world.get("/v1/rules/NO.SUCH.RULE/scope", headers=analyst).status_code == 404
+    # a service account may read rules but not the register: it must not learn who is covered
+    machine = hdr(world, Role.INGESTION_SERVICE)
+    assert world.get("/v1/rules/EU.CRR3.CET1/scope", headers=machine).status_code == 403
+    assert world.get("/v1/rules/EU.CRR3.CET1/scope").status_code == 401
+    for hostile in ("x'%20OR%201=1--", "..%2F..%2Fetc%2Fpasswd", "%3Cscript%3E"):
+        got = world.get(f"/v1/rules/{hostile}/scope", headers=analyst)
+        assert got.status_code in (404, 422) and "Traceback" not in got.text
+    assert (
+        world.get("/v1/rules/EU.CRR3.CET1/scope?on=not-a-date", headers=analyst).status_code == 422
+    )
+    # another tenant sees nothing of this tenant's rules
+    other = hdr(world, Role.ANALYST, tenant="globex")
+    assert world.get("/v1/rules/EU.CRR3.CET1/scope", headers=other).status_code == 404

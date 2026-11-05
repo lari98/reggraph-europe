@@ -215,7 +215,7 @@ tbody tr.link { cursor: pointer; } tbody tr.link:hover, tbody tr.link:focus-visi
 .net-legend .sw { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; }
 .net-legend label { display: inline-flex; gap: 5px; align-items: center; cursor: pointer; }
 .scrim { position: fixed; inset: 0; background: rgb(8 12 24 / 55%); z-index: 50; }
-.drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(560px, 100%); background: var(--card); z-index: 60;
+.drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(780px, 100%); background: var(--card); z-index: 60;
   box-shadow: -8px 0 30px rgb(0 0 0 / 25%); display: flex; flex-direction: column; }
 .drawer-h { display: flex; justify-content: space-between; gap: 10px; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--line); }
 .drawer-h h2 { font-size: 17px; overflow-wrap: anywhere; }
@@ -423,3 +423,29 @@ a.tile:hover .tile-r, a.tile:focus-visible .tile-r { stroke: var(--ink); stroke-
 .find-out { margin-top: 10px; } .find-out + * { margin-top: 0; }
 @media (max-width: 900px) { .flow { grid-template-columns: minmax(0, 1fr); } .flow-i .arrow { display: none; } }
 .ru-intro { grid-template-columns: minmax(0, 1fr); } .ru-intro .chip { white-space: normal; }
+
+/* ---- rule network, node graphs and evidence timeline ---- */
+.lg-wrap { overflow-x: auto; max-width: 100%; }
+.lgraph { display: block; min-width: 560px; width: 100%; height: auto; }
+.lg-title { font-size: 10px; font-weight: 700; text-anchor: middle; fill: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.lg-edge { fill: none; stroke: var(--line); stroke-width: 1.3; transition: stroke .15s; }
+.lg-edge.on { stroke: var(--accent); stroke-width: 2; }
+.lgraph.hl .lg-edge:not(.on) { opacity: .25; }
+.lg-node rect { fill: var(--surface, var(--card, #fff)); stroke: var(--line); stroke-width: 1.2; }
+.lg-node text { font-size: 10.5px; fill: var(--ink, currentColor); pointer-events: none; }
+.lg-reg rect { stroke: var(--c1); } .lg-rule rect { fill: var(--accent); stroke: var(--accent); } .lg-rule text { fill: #fff; font-weight: 700; }
+.lg-type rect { stroke: var(--c2); } .lg-jur rect { stroke: var(--c3); } .lg-inst rect { stroke: var(--c4, var(--c2)); } .lg-owner rect, .lg-data rect { stroke-dasharray: 3 2; }
+.lgraph.hl .lg-node:not(.on) { opacity: .3; }
+.lg-node.on rect { stroke: var(--accent); stroke-width: 2; }
+.lg-node.go { cursor: pointer; } .lg-node:focus { outline: none; } .lg-node:focus-visible rect { stroke: var(--accent); stroke-width: 3; }
+.etl { display: block; width: 100%; height: auto; }
+.etl-axis { stroke: var(--muted); stroke-width: 2; } .etl-tick { stroke: var(--muted); stroke-width: 1; }
+.etl-yr { font-size: 10px; text-anchor: middle; fill: var(--muted); }
+.etl-dot { stroke: var(--card, #fff); stroke-width: 1.5; }
+.etl-legal, .etl-sw-legal { fill: var(--c1); background: var(--c1); } .etl-propose, .etl-sw-propose { fill: var(--c3); background: var(--c3); }
+.etl-approve, .etl-sw-approve { fill: var(--ok); background: var(--ok); } .etl-reject, .etl-sw-reject { fill: var(--bad); background: var(--bad); } .etl-withdraw, .etl-sw-withdraw { fill: var(--warn); background: var(--warn); }
+.ev-note { display: block; }
+.rule-panel h3 { margin: 18px 0 6px; }
+@media print { .lg-wrap { overflow: visible; } }
+.drawer-b > * { min-width: 0; } .rule-panel { min-width: 0; } .rule-panel .kv dd { overflow-wrap: anywhere; }
+.card-body select { max-width: 100%; }

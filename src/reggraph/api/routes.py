@@ -14,6 +14,7 @@ POST    /v1/ingest                              rules:ingest         machine-fou
 GET     /v1/rules                               rules:read           current approved rules
 GET     /v1/rules/applicable                    rules:read           rules for an entity/date
 GET     /v1/rules/{key}                         rules:read           version history
+GET     /v1/rules/{key}/scope                   rules+registry:read  institutions a rule covers
 POST    /v1/rules/{key}/versions/{n}/approve    rules:approve        four-eyes approval
 POST    /v1/rules/{key}/versions/{n}/reject     rules:approve        reject a draft
 POST    /v1/rules/{key}/withdraw                rules:withdraw       logical delete
@@ -85,6 +86,8 @@ from reggraph.registry import OwnershipInput, applicable_rules
 from reggraph.registry.lei import validate_lei
 from reggraph.regulation.models import ConsolidationBasis, EntityType
 from reggraph.security.rbac import Permission, Principal
+
+_SCOPE_LIMIT = 1000  # most institutions one scope request will examine
 
 router = APIRouter()
 
@@ -213,6 +216,45 @@ def rule_history(
     services: Services = Depends(get_services),
 ) -> list[dict[str, Any]]:
     return [_dump(v) for v in services.rules.history(who, key)]
+
+
+@router.get("/v1/rules/{key}/scope")
+def rule_scope(
+    key: str,
+    on: date | None = Query(default=None),
+    who: Principal = Depends(require(Permission.RULES_READ)),
+    services: Services = Depends(get_services),
+) -> dict[str, Any]:
+    """Which registered institutions does this rule cover on a day? (rule -> entities)
+
+    Uses the same mapping as ``/v1/entities/{lei}/rules``, so both views always agree.
+    """
+    who.require(Permission.REGISTRY_READ)
+    day = on or services.clock.now().date()
+    services.rules.history(who, key)  # 404 for an unknown key
+    covered: list[dict[str, Any]] = []
+    checked, after = 0, ""
+    while checked < _SCOPE_LIMIT:
+        page = services.registry.list_entities(who, status="active", limit=200, after=after)
+        for item in page:
+            checked += 1
+            entity = item.entity
+            for match in applicable_rules(who, services.registry, services.rules, entity.lei, day):
+                if match.version.rule_key == key:
+                    covered.append(
+                        {
+                            "lei": entity.lei,
+                            "legal_name": entity.legal_name,
+                            "entity_type": entity.entity_type.value,
+                            "jurisdiction": entity.jurisdiction,
+                            "in_transition": match.in_transition,
+                            "version_no": match.version.version_no,
+                        }
+                    )
+        if len(page) < 200:
+            break
+        after = page[-1].entity.lei
+    return {"rule_key": key, "on": day.isoformat(), "checked": checked, "covered": covered}
 
 
 @router.post("/v1/rules/{key}/versions/{version_no}/approve")

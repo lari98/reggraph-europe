@@ -271,7 +271,7 @@ def _rule_set() -> list[tuple[RuleInput, str]]:
             _rule(
                 "EU.CRR.ART92.LEVERAGE",
                 "Leverage ratio",
-                "CRR, Art. 92(1)(d), as amended by Regulation (EU) 2019/876",
+                "Regulation (EU) No 575/2013 (CRR), Art. 92(1)(d)",
                 crr,
                 ("EU",),
                 _BANKS,

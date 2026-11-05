@@ -367,25 +367,125 @@ async function contractPanel(ref) {
       { title: "By", get: (r) => r.changed_by }, { title: "Summary", get: (r) => r.change_summary }, { title: "Hash", get: (r) => r.content_hash, render: (r) => short(r.content_hash) }],
     rows: hist, search: false }));
 }
+// ---------------------------------------------------------------- rule graph, evidence timeline, drill-down
+// Layered node graph: columns of nodes, curves between them. Hover or focus lights up what a node is
+// connected to; click or Enter drills into it (a page, a drawer or the official source).
+function layerGraph(cols, edges, o) {
+  const opt = o || {}, CW = opt.colW || 150, GAP = opt.gap || 40, RH = opt.rowH || 26, NH = 20, T = 26;
+  const rows = Math.max(1, ...cols.map((c) => c.nodes.length));
+  const W = cols.length * CW + (cols.length - 1) * GAP + 2, H = T + rows * RH + 4, max = Math.floor((CW - 14) / 6.2);
+  const svg = s("svg", { viewBox: "0 0 " + W + " " + H, class: "lgraph", role: "group", "aria-label": opt.label || "" });
+  const pos = {}, els = {}, links = [];
+  cols.forEach((c, ci) => {
+    const off = ((rows - c.nodes.length) * RH) / 2, x0 = ci * (CW + GAP) + 1;
+    svg.append(s("text", { x: x0 + CW / 2, y: 13, class: "lg-title" }, c.title));
+    c.nodes.forEach((n, i) => { pos[n.id] = { x: x0, y: T + off + i * RH }; });
+  });
+  for (const e of edges) {
+    const a = pos[e.from], b = pos[e.to];
+    if (!a || !b) continue;
+    const x1 = a.x + CW, y1 = a.y + NH / 2, x2 = b.x, y2 = b.y + NH / 2, mx = (x1 + x2) / 2;
+    const path = s("path", { d: "M" + x1 + " " + y1 + " C" + mx + " " + y1 + " " + mx + " " + y2 + " " + x2 + " " + y2, class: "lg-edge" });
+    svg.append(path); links.push({ ...e, path });
+  }
+  const light = (id) => {
+    const on = new Set([id]);
+    for (const l of links) if (l.from === id || l.to === id) { on.add(l.from); on.add(l.to); }
+    svg.classList.add("hl");
+    for (const [k, el] of Object.entries(els)) el.classList.toggle("on", on.has(k));
+    for (const l of links) l.path.classList.toggle("on", l.from === id || l.to === id);
+  };
+  const dark = () => { svg.classList.remove("hl"); for (const el of Object.values(els)) el.classList.remove("on"); for (const l of links) l.path.classList.remove("on"); };
+  for (const c of cols) for (const n of c.nodes) {
+    const label = String(n.label).length > max ? String(n.label).slice(0, max - 1) + "…" : String(n.label);
+    const go = n.act || (n.href ? () => { location.hash = n.href; } : null);
+    const g = s("g", { class: "lg-node lg-" + (n.kind || "x") + (go ? " go" : ""), tabindex: 0, role: go ? "link" : "img", "aria-label": n.label + (n.sub ? ", " + n.sub : "") },
+      s("title", {}, n.label + (n.sub ? " · " + n.sub : "")), s("rect", { x: pos[n.id].x, y: pos[n.id].y, width: CW, height: NH, rx: 6 }), s("text", { x: pos[n.id].x + 8, y: pos[n.id].y + 14 }, label));
+    g.addEventListener("mouseenter", () => light(n.id)); g.addEventListener("focus", () => light(n.id));
+    g.addEventListener("mouseleave", dark); g.addEventListener("blur", dark);
+    if (go) { g.addEventListener("click", go); g.addEventListener("keydown", (ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); go(); } }); }
+    svg.append(g); els[n.id] = g;
+  }
+  return h("div", { class: "lg-wrap" }, svg);
+}
+const regOf = (cite) => { const m = String(cite).match(/^(.*?)(?:,\s*(?:Art\.|§|as amended)|$)/); return (m ? m[1] : String(cite)).replace(/\s+/g, " ").trim(); };
+const shortTitle = (r) => String(r.title).replace(/ \(demo summary\)$/, "");
+const openAudit = (r) => drawer("Audit entry #" + r.n, Promise.resolve(h("div", null, kv([["Time", r.ts], ["Actor", r.actor], ["Action", r.action], ["Subject", r.subject], ["Entry hash", h("span", { class: "mono", text: r.entry_hash })], ["Previous hash", h("span", { class: "mono", text: r.prev_hash })]]),
+  h("h3", { text: "Detail" }), kv(Object.entries(r.detail || {}).map(([k, v]) => [k, typeof v === "object" ? JSON.stringify(v) : String(v)])))));
+
+// Evidence timeline: every dated fact about a rule in order, each with who did it and the audit entry that proves it.
+function evidenceTimeline(hist, audit) {
+  const ev = [], cur = hist.slice().sort((a, b) => b.version_no - a.version_no)[0].rule;
+  const add = (date, kind, text, who, entry, note) => { if (date) ev.push({ ms: dayNum(date), date: String(date).slice(0, 10), kind, text, who: who || "-", entry, note: note || "" }); };
+  const proof = (n, actions) => audit.find((a) => a.subject === cur.rule_key + "@" + n && actions.includes(a.action));
+  add(cur.publication_date, "legal", t("ev.pub"), t("ev.official")); add(cur.effective_date, "legal", t("ev.eff"), t("ev.official")); add(cur.application_date, "legal", t("ev.app"), t("ev.official"));
+  add(cur.transition_end, "legal", t("ev.trans"), t("ev.official"));
+  for (const v of hist) {
+    add(v.proposed_at, "propose", t("ev.prop", { n: v.version_no }), v.proposed_by, proof(v.version_no, ["rule.draft_created", "rule.ingested"]), v.change_summary);
+    if (v.decided_at) add(v.decided_at, v.status === "rejected" ? "reject" : v.status === "withdrawn" ? "withdraw" : "approve", t("ev.dec", { n: v.version_no, s: word(v.status) }), v.decided_by, proof(v.version_no, ["rule.approved", "rule.rejected", "rule.withdrawn"]), v.decision_note);
+  }
+  ev.sort((a, b) => a.ms - b.ms);
+  const now = Date.now(), lo = Math.min(...ev.map((e) => e.ms), now), hi = Math.max(...ev.map((e) => e.ms), now), W = 680, H = 84, L = 14, R = 14;
+  const x = (ms) => L + (hi === lo ? (W - L - R) / 2 : ((ms - lo) / (hi - lo)) * (W - L - R));
+  const svg = s("svg", { viewBox: "0 0 " + W + " " + H, class: "etl", role: "img", "aria-label": t("ev.title") });
+  svg.append(s("line", { x1: L, x2: W - R, y1: 46, y2: 46, class: "etl-axis" }));
+  const y0 = new Date(lo).getUTCFullYear(), y1 = new Date(hi).getUTCFullYear(), step = Math.max(1, Math.ceil((y1 - y0) / 7));
+  for (let yr = y0; yr <= y1; yr += step) { const gx = x(Math.max(lo, Date.UTC(yr, 0, 1))); svg.append(s("line", { x1: gx.toFixed(1), x2: gx.toFixed(1), y1: 42, y2: 50, class: "etl-tick" }), s("text", { x: gx.toFixed(1), y: 68, class: "etl-yr" }, String(yr))); }
+  const seen = {};
+  for (const e of ev) {
+    const k = Math.round(x(e.ms) / 9), lift = (seen[k] = (seen[k] || 0) + 1) - 1;
+    svg.append(s("circle", { cx: x(e.ms).toFixed(1), cy: 46 - lift * 10, r: 5.5, class: "etl-dot etl-" + e.kind }, s("title", {}, e.date + " · " + e.text + " · " + e.who)));
+  }
+  svg.append(s("line", { x1: x(now).toFixed(1), x2: x(now).toFixed(1), y1: 6, y2: 54, class: "g-today" }), s("text", { x: x(now).toFixed(1), y: 80, class: "etl-yr g-todayt" }, t("ru.today")));
+  const key = h("div", { class: "pair-key" }, [["legal", "ev.k.legal"], ["propose", "ev.k.prop"], ["approve", "ev.k.ok"], ["reject", "ev.k.bad"], ["withdraw", "ev.k.wd"]].map(([k2, tk]) => h("span", null, h("i", { class: "sw etl-sw-" + k2 }), t(tk))));
+  const ledger = table({ cols: [{ title: t("ev.date"), get: (e) => e.date }, { title: t("ev.what"), get: (e) => e.text, render: (e) => h("span", null, h("i", { class: "sw etl-sw-" + e.kind }), e.text, e.note ? h("span", { class: "muted small ev-note", text: e.note }) : null) }, { title: t("ev.who"), get: (e) => e.who },
+    { title: t("ev.proof"), get: (e) => (e.entry ? e.entry.entry_hash : ""), render: (e) => (e.entry ? h("button", { type: "button", class: "linklike mono", text: String(e.entry.entry_hash).slice(0, 10), title: t("ev.proof.t"), onclick: () => openAudit(e.entry) }) : h("span", { class: "muted", text: t("ev.official.src") })) }],
+  rows: ev, search: false, pageSize: 12 });
+  return h("div", null, svg, key, ledger);
+}
+
 async function rulePanel(key) {
-  const hist = await api("/v1/rules/" + enc(key));
+  const [hist, scope, audit] = await Promise.all([api("/v1/rules/" + enc(key)), api("/v1/rules/" + enc(key) + "/scope" + (S.asof ? "?on=" + S.asof : "")).catch(() => null), api("/v1/audit?limit=500").catch(() => [])]);
+  await entities().catch(() => null);
   const cur = hist.slice().sort((a, b) => b.version_no - a.version_no)[0];
-  const r = cur.rule;
+  const r = cur.rule, covered = scope ? scope.covered : [];
   const link = r.source_url && /^https:\/\//.test(r.source_url) ? h("a", { href: r.source_url, rel: "noopener noreferrer", target: "_blank", text: r.source_url }) : r.source_url;
-  return h("div", null,
-    kv([["Key", r.rule_key], ["Title", r.title], ["Status", chip(cur.status, cur.status === "approved" ? "ok" : cur.status === "rejected" ? "bad" : "warn")], ["Citation", r.citation], ["Source", link],
-      ["Jurisdictions", (r.jurisdictions || []).join(", ")], ["Entity types", (r.entity_types || []).map(words).join(", ")], ["Consolidation", words(r.consolidation || "-")],
-      ["Published", r.publication_date], ["Effective", r.effective_date], ["Applies from", r.application_date], ["Transition ends", r.transition_end || "-"],
-      ["Control owner", r.control_owner], ["Version", cur.version_no], ["Content hash", short(cur.content_hash)]]),
-    h("h3", { text: "Numeric requirements" }),
-    (r.numeric_requirements || []).length ? table({ cols: [{ title: "Name", get: (x) => x.name }, { title: "Test", get: (x) => x.comparator },
-      { title: "Value", num: true, get: (x) => x.value }, { title: "Unit", get: (x) => x.unit }], rows: r.numeric_requirements, search: false }) : h("p", { class: "empty", text: "None recorded." }),
-    h("h3", { text: "Decision trail" }),
-    table({ cols: [{ title: "Version", num: true, get: (x) => x.version_no }, { title: "Status", get: (x) => x.status }, { title: "Proposed by", get: (x) => x.proposed_by },
-      { title: "Decided by", get: (x) => x.decided_by || "-" }, { title: "Note", get: (x) => x.decision_note || "-" }], rows: hist, search: false }));
+  // connected data: source and owner and data -> rule -> who it applies to -> the institutions it covers
+  const insts = covered.slice().sort((a, b) => a.legal_name.localeCompare(b.legal_name)), shown = insts.slice(0, 8);
+  const cols = [{ title: t("lg.source"), nodes: [{ id: "reg", kind: "reg", label: regOf(r.citation), sub: r.citation, act: r.source_url && /^https:\/\//.test(r.source_url) ? () => window.open(r.source_url, "_blank", "noopener,noreferrer") : null },
+      { id: "own", kind: "owner", label: r.control_owner, sub: t("lg.owner") }, ...(r.mapped_model ? [{ id: "mod", kind: "data", label: r.mapped_model, sub: t("lg.model") }] : []),
+      ...(r.impacted_data || []).map((d) => ({ id: "d:" + d, kind: "data", label: word(d), sub: t("lg.data") }))] },
+    { title: t("lg.rule"), nodes: [{ id: "rule", kind: "rule", label: shortTitle(r), sub: r.citation }] },
+    { title: t("lg.applies"), nodes: [...(r.entity_types || []).map((k) => ({ id: "t:" + k, kind: "type", label: word(k), sub: t("lg.type"), href: "#/entities?type=" + enc(k) })), ...(r.jurisdictions || []).map((j) => ({ id: "j:" + j, kind: "jur", label: j === "EU" ? "EU" : cname(j), sub: t("lg.where"), href: j === "EU" ? "#/entities" : "#/country/" + enc(j) }))] },
+    { title: t("lg.inst", { n: insts.length }), nodes: [...shown.map((i) => ({ id: "i:" + i.lei, kind: "inst", label: i.legal_name.replace(/ \(demo\)$/, ""), sub: i.entity_type + " · " + i.jurisdiction, href: "#/entity/" + enc(i.lei) })), ...(insts.length > shown.length ? [{ id: "more", kind: "x", label: t("lg.more", { n: insts.length - shown.length }), sub: "" }] : [])] }];
+  const edges = [{ from: "reg", to: "rule" }, { from: "own", to: "rule" }, ...(r.mapped_model ? [{ from: "mod", to: "rule" }] : []), ...(r.impacted_data || []).map((d) => ({ from: "d:" + d, to: "rule" })),
+    ...(r.entity_types || []).map((k) => ({ from: "rule", to: "t:" + k })), ...(r.jurisdictions || []).map((j) => ({ from: "rule", to: "j:" + j })),
+    ...shown.flatMap((i) => [{ from: "t:" + i.entity_type, to: "i:" + i.lei }, ...(i.jurisdiction && (r.jurisdictions || []).includes(i.jurisdiction) ? [{ from: "j:" + i.jurisdiction, to: "i:" + i.lei }] : [])])];
+  const byType = {};
+  for (const i of covered) byType[i.entity_type] = (byType[i.entity_type] || 0) + 1;
+  const changed = hist.length > 1 ? table({ cols: [{ title: "v", num: true, get: (x) => x.version_no }, { title: t("th.status"), get: (x) => x.status, render: (x) => chip(word(x.status), x.status === "approved" ? "ok" : x.status === "rejected" ? "bad" : "warn") },
+    { title: t("ru.th.limit"), get: (x) => (x.rule.numeric_requirements || []).map(limitText).join("; ") || "-" }, { title: t("ru.th.start"), get: (x) => x.rule.application_date }], rows: hist.slice().sort((a, b) => b.version_no - a.version_no), search: false }) : null;
+  return h("div", { class: "rule-panel" },
+    h("p", { class: "muted small", text: t("rp.intro") }),
+    kv([[t("ru.th.key"), r.rule_key], [t("ru.th.rule"), r.title], [t("th.status"), chip(word(cur.status), cur.status === "approved" ? "ok" : cur.status === "rejected" ? "bad" : "warn")], [t("ru.th.cite"), r.citation], [t("rp.link"), link],
+      [t("ru.th.juris"), (r.jurisdictions || []).join(", ")], [t("lg.type"), (r.entity_types || []).map(words).join(", ")], [t("ru.th.start"), r.application_date], [t("rp.trans"), r.transition_end || "-"], [t("ru.th.owner"), r.control_owner], ["Version", cur.version_no], [t("rp.hash"), short(cur.content_hash)]]),
+    h("h3", { text: t("rp.graph") }), h("p", { class: "muted small", text: t("rp.graph.s") }), layerGraph(cols, edges, { colW: 156, gap: 28, label: t("rp.graph") }),
+    h("h3", { text: t("rp.scope", { n: covered.length }) }),
+    covered.length ? h("div", null, h("div", { class: "chips" }, Object.entries(byType).map(([k, n]) => chip(word(k) + " " + n, "info"))), table({ cols: [{ title: t("th.name"), get: (i) => i.legal_name }, { title: t("th.type"), get: (i) => i.entity_type, render: (i) => chip(word(i.entity_type), "info") }, { title: t("ru.th.juris"), get: (i) => i.jurisdiction },
+      { title: t("th.status"), get: (i) => (i.in_transition ? 1 : 0), render: (i) => (i.in_transition ? chip(t("ru.trans"), "warn") : chip(t("ru.live"), "ok")) }], rows: covered, href: (i) => "#/entity/" + enc(i.lei), csv: "scope-" + key, pageSize: 6 }))
+      : h("p", { class: "empty", text: t("rp.noscope") }),
+    h("h3", { text: t("ev.title") }), h("p", { class: "muted small", text: t("ev.s") }), evidenceTimeline(hist, audit),
+    h("h3", { text: t("rp.limits") }),
+    (r.numeric_requirements || []).length ? h("ul", { class: "limits" }, r.numeric_requirements.map((q) => h("li", null, h("strong", { text: limitText(q) })))) : h("p", { class: "empty", text: t("ru.none") }),
+    changed ? h("div", null, h("h3", { text: t("rp.changed") }), changed) : null,
+    h("h3", { text: t("rp.trail") }),
+    table({ cols: [{ title: "v", num: true, get: (x) => x.version_no }, { title: t("th.status"), get: (x) => x.status }, { title: t("rp.by"), get: (x) => x.proposed_by }, { title: t("rp.decided"), get: (x) => x.decided_by || "-" }, { title: t("rp.note"), get: (x) => x.decision_note || x.change_summary || "-" }], rows: hist, search: false }));
 }
 const openContract = (ref) => drawer("Contract " + ref, contractPanel(ref));
 const openRule = (key) => drawer("Rule " + key, rulePanel(key));
+const openRegulation = (name, rules) => drawer(name, Promise.resolve(h("div", null, h("p", { class: "muted small", text: t("rp.reg") }), h("ul", { class: "refs" },
+  rules.filter((r) => regOf(r.citation) === name).map((r) => h("li", null, h("button", { type: "button", class: "linklike", text: shortTitle(r), onclick: () => openRule(r.key) }), h("span", { class: "muted small", text: r.citation }),
+    r.source_url && /^https:\/\//.test(r.source_url) ? h("a", { href: r.source_url, rel: "noopener noreferrer", target: "_blank", text: t("ru.open") }) : null))))));
 const hhiBand = (v) => { const n = Number(v); return n >= 2500 ? ["high", "bad"] : n >= 1500 ? ["moderate", "warn"] : ["low", "ok"]; };
 
 // ---------------------------------------------------------------- pages
@@ -988,6 +1088,13 @@ PAGES.rules = async (_a, q) => {
   g.append(card(t("ru.c.who"), bars(count(approved, (r) => r.entity_types || []).map(([k, n], i) => ({ name: word(k), text: String(n), ratio: n / Math.max(1, approved.length), color: i }))), "span-4", null, t("ru.c.who.s")));
   g.append(card(t("ru.c.time"), ruleTimeline(approved), "span-7", null, t("ru.c.time.s")));
   g.append(card(t("ru.c.cov"), ruleCoverage(approved), "span-5", null, t("ru.c.cov.s")));
+  const regs = [...new Set(approved.map((r) => regOf(r.citation)))].sort();
+  g.append(card(t("ru.c.net"), layerGraph([{ title: t("lg.source"), nodes: regs.map((k) => ({ id: "r:" + k, kind: "reg", label: k, sub: k, act: () => openRegulation(k, approved) })) },
+    { title: t("lg.rule"), nodes: approved.map((r) => ({ id: "u:" + r.key, kind: "rule", label: shortTitle(r), sub: r.citation, act: () => openRule(r.key) })) },
+    { title: t("lg.applies"), nodes: [...new Set(approved.flatMap((r) => r.entity_types || []))].sort().map((k) => ({ id: "t:" + k, kind: "type", label: word(k), sub: t("lg.type"), href: "#/entities?type=" + enc(k) })) },
+    { title: t("lg.where"), nodes: [...new Set(approved.flatMap((r) => r.jurisdictions || []))].sort().map((j) => ({ id: "j:" + j, kind: "jur", label: j === "EU" ? "EU" : cname(j), sub: t("lg.where"), href: j === "EU" ? "#/entities" : "#/country/" + enc(j) })) }],
+  approved.flatMap((r) => [{ from: "r:" + regOf(r.citation), to: "u:" + r.key }, ...(r.entity_types || []).map((k) => ({ from: "u:" + r.key, to: "t:" + k })), ...(r.jurisdictions || []).map((j) => ({ from: "u:" + r.key, to: "j:" + j }))]),
+  { colW: 218, gap: 62, rowH: 24, label: t("ru.c.net") }), "span-12", null, t("ru.c.net.s")));
   g.append(card(t("ru.c.thr"), limits.length ? table({ cols: [{ title: t("ru.th.limit"), get: (r) => limitText(r), render: (r) => h("strong", { text: limitText(r) }) }, { title: t("ru.th.rule"), get: (r) => r.rule.title }, { title: t("ru.th.cite"), get: (r) => r.rule.citation },
     { title: t("ru.th.start"), get: (r) => r.rule.application_date }], rows: limits, open: (r) => openRule(r.rule.key), csv: "rule-limits", pageSize: 8 }) : h("p", { class: "empty", text: t("ru.none") }), "span-12", null, t("ru.c.thr.s")));
 

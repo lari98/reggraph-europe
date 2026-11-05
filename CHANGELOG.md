@@ -9,6 +9,9 @@ module also has its own version in `module_versions.json`. Format follows
 Newest first. Written automatically by `python tools/module_manifest.py bump ...`.
 
 <!-- module-log -->
+- **app-shell 0.10.0** (2026-11-05, minor): Release 0.10.0: Rules drill-down to the evidence
+- **dashboard 0.9.0** (2026-11-05, minor): Rules drill-down: rule network graph, per-rule node graph, evidence timeline with audit proofs, institutions in scope, limit history
+- **api 0.8.0** (2026-11-05, minor): GET /v1/rules/{key}/scope: institutions a rule covers (for the rule drill-down)
 - **app-shell 0.9.0** (2026-11-04, minor): Release 0.9.0: 22 illustrative rules with real source references in the demo
 - **dashboard 0.8.0** (2026-11-04, minor): Rules page for non-experts: how rules work, status/country/type charts, start-date timeline, coverage grid, plain-language limits, institution finder, official sources
 - **app-shell 0.8.0** (2026-11-04, minor): Release 0.8.0: large realistic demo data set (DACH-weighted, invented), seeded and repeatable
@@ -64,6 +67,17 @@ Newest first. Written automatically by `python tools/module_manifest.py bump ...
 - **storage 0.2.0** (2026-11-03, minor): Migration 2: entity_versions and ownership_links with immutability triggers
 - **security 0.2.0** (2026-11-03, minor): Add registry:read and registry:write permissions to the role matrix
 - **registry 0.1.0** (2026-11-03, new): Phase 2: LEI-keyed entities, licences, ownership links, groups, entity-to-rule mapping
+
+## [0.10.0] - 2026-11-05
+
+### Added
+- Rules page: network of regulation, rules, institution types and countries; hover follows a path, click opens a rule, regulation, type or country.
+- Rule drawer rebuilt as a drill-down: connection graph (source, owner, model, data, rule, who it applies to, institutions), institutions in scope, evidence timeline (legal dates, proposals, decisions) with a hash that opens the audit entry, limit history across versions.
+- `GET /v1/rules/{key}/scope` lists the register entries a rule covers on a day (needs `rules:read` and `registry:read`).
+- Texts in en/de/fr/it/es; keyboard access for every node; phone-safe layout; drawer widened.
+
+### Fixed
+- Long institution names no longer widen the "which rules apply to me" dropdown on phones.
 
 ## [0.9.0] - Rules page for non-experts, realistic rules with references
 
