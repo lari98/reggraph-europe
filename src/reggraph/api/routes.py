@@ -53,6 +53,9 @@ GET     /v1/stress/runs                         stress:read          list runs
 GET     /v1/stress/runs/{id}                    stress:read          run and result
 GET     /v1/stress/runs/{id}/snapshot           stress:read          frozen inputs
 POST    /v1/stress/runs/{id}/verify             stress:read          recompute and check
+GET     /v1/stress/runs/{id}/analysis           stress:read          ladder, reverse test, cascade
+GET     /v1/forecast                            stress:read          quarterly outlook of a run
+GET     /v1/forecast/plan                       stress:read          recovery options compared
 GET     /dashboard (+ app.js, lang.js, app.css) public page          the dashboard page (no data)
 GET     /dashboard/version                      public               version + build id
 GET     /v1/dashboard                           dashboard:read       role-shaped overview
@@ -68,7 +71,7 @@ from __future__ import annotations
 import hashlib
 from dataclasses import asdict
 from datetime import date
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, Path, Query, Request, Response
 from pydantic import BaseModel
@@ -80,6 +83,7 @@ from reggraph.core.errors import ValidationFailure
 from reggraph.currency import CURRENCIES, Money, format_money
 from reggraph.dashboard import STATIC_DIR
 from reggraph.exposure import BatchInput
+from reggraph.forecast import ForecastParams
 from reggraph.i18n import SUPPORTED_LOCALES
 from reggraph.jurisdictions import all_jurisdictions, get_jurisdiction
 from reggraph.registry import OwnershipInput, applicable_rules
@@ -740,6 +744,68 @@ def run_snapshot(
     services: Services = Depends(get_services),
 ) -> dict[str, Any]:
     return services.stress.snapshot_of(who, run_id)
+
+
+@router.get("/v1/stress/runs/{run_id}/analysis")
+def run_analysis(
+    run_id: int = _ID,
+    who: Principal = Depends(require(Permission.STRESS_READ)),
+    services: Services = Depends(get_services),
+) -> dict[str, Any]:
+    """Severity ladder, reverse stress test and contagion cascade (nothing is stored)."""
+    return _dump(services.stress.analyse(who, run_id))
+
+
+def _forecast_params(
+    scenario: Literal["baseline", "adverse", "severe"],
+    quarters: int,
+    seed: int,
+    raise_percent: float,
+    raise_quarter: int,
+    derisk_percent: float,
+) -> ForecastParams:
+    return ForecastParams(
+        scenario=scenario,
+        quarters=quarters,
+        seed=seed,
+        raise_percent=raise_percent,
+        raise_quarter=min(raise_quarter, quarters),
+        derisk_percent=derisk_percent,
+    )
+
+
+@router.get("/v1/forecast")
+def forecast(
+    run: int = Query(ge=1, le=2_000_000_000),
+    scenario: Literal["baseline", "adverse", "severe"] = "adverse",
+    quarters: int = Query(default=12, ge=4, le=20),
+    seed: int = Query(default=2026, ge=0, le=2_147_483_647),
+    raise_percent: float = Query(default=0, ge=0, le=100),
+    raise_quarter: int = Query(default=1, ge=1, le=20),
+    derisk_percent: float = Query(default=0, ge=0, le=50),
+    holder: str | None = Query(default=None, max_length=20),
+    who: Principal = Depends(require(Permission.STRESS_READ)),
+    services: Services = Depends(get_services),
+) -> dict[str, Any]:
+    """Quarterly outlook of capital buffers for a stored stress run, with bands and a ledger."""
+    params = _forecast_params(
+        scenario, quarters, seed, raise_percent, raise_quarter, derisk_percent
+    )
+    return services.forecast.forecast(who, run, params, holder)
+
+
+@router.get("/v1/forecast/plan")
+def forecast_plan(
+    run: int = Query(ge=1, le=2_000_000_000),
+    scenario: Literal["baseline", "adverse", "severe"] = "adverse",
+    quarters: int = Query(default=12, ge=4, le=20),
+    seed: int = Query(default=2026, ge=0, le=2_147_483_647),
+    who: Principal = Depends(require(Permission.STRESS_READ)),
+    services: Services = Depends(get_services),
+) -> dict[str, Any]:
+    """Recovery options (capital raise now or later, de-risking, both) on the same futures."""
+    params = _forecast_params(scenario, quarters, seed, 0, 1, 0)
+    return services.forecast.plan(who, run, params)
 
 
 @router.post("/v1/stress/runs/{run_id}/verify")

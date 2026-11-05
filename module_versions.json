@@ -1,20 +1,20 @@
 {
   "modules": {
     "api": {
-      "fingerprint": "a93d8f6367fd1d9fd367dc57d402d96889b8dbc614a44f40d21f8fbdb699ea6f",
+      "fingerprint": "87c77e3d27b065b8da84b227733c1d061fc81dd46248df2f831fa1c7e445f715",
       "paths": [
         "src/reggraph/api"
       ],
-      "version": "0.8.0"
+      "version": "0.9.0"
     },
     "app-shell": {
-      "fingerprint": "c1c9cb9088ff2021b547cf8fecff98968576df84e03a2f713de8fec3b00a2e2c",
+      "fingerprint": "6447c790bd33b8122904ec02bb0535774c36490b672960c2e279d674e819473d",
       "paths": [
         "src/reggraph/__init__.py",
         "src/reggraph/config.py",
         "src/reggraph/cli.py"
       ],
-      "version": "0.10.0"
+      "version": "0.11.0"
     },
     "connectivity": {
       "fingerprint": "18b41274f4f6ac93a99944d0de6578ac2868023fed5d402ecb8decad0326e916",
@@ -45,11 +45,11 @@
       "version": "0.2.0"
     },
     "dashboard": {
-      "fingerprint": "ae5fd9757690b59d1cbddb5b2c2865bbf2fcf840dd7783c394b219ad8e48b888",
+      "fingerprint": "43571f121f0353ed2d8df87d9db3db8e1c63116d394b5aff07fc0b79db104b54",
       "paths": [
         "src/reggraph/dashboard"
       ],
-      "version": "0.9.0"
+      "version": "0.10.0"
     },
     "exposure": {
       "fingerprint": "4c270759f2dde8b134913cf73d14983c96381b867370266b5ef30e7dca315ce3",
@@ -57,6 +57,13 @@
         "src/reggraph/exposure"
       ],
       "version": "0.2.0"
+    },
+    "forecast": {
+      "fingerprint": "a325e03cbc7f7724bf4bc337aae03b2ab8191d584760960fcf40b5961a8a8045",
+      "paths": [
+        "src/reggraph/forecast"
+      ],
+      "version": "0.1.0"
     },
     "fx": {
       "fingerprint": "0361f3d29f2e022c60545b5dd2bda30fc8f2e8b6f162935059a32c6b96f37475",
@@ -122,11 +129,11 @@
       "version": "0.5.0"
     },
     "stress": {
-      "fingerprint": "6d1b156a5377bb678a638c8aa9c3f0d91ba0a89a6cd56c50c1ab4060ad0c7328",
+      "fingerprint": "463b611259f829a0583502d96601cacf01f72b70079b521948541271ce3c57dc",
       "paths": [
         "src/reggraph/stress"
       ],
-      "version": "0.1.0"
+      "version": "0.2.0"
     }
   },
   "schema": 1

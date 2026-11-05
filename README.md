@@ -4,7 +4,7 @@
 change, cross-border exposure and resilience across the EU-27, Switzerland, the United
 Kingdom, the United States and Singapore.
 
-> **Status: Phase 5 of 7 complete (foundation, registry, exposure, insurance, stress lab, PostgreSQL, dashboard, connectors, SSO), release 0.10.0 (Rules drill-down: rule network, evidence timeline, institutions in scope).**
+> **Status: Phase 5 of 7 complete (foundation, registry, exposure, insurance, stress lab, PostgreSQL, dashboard, connectors, SSO), release 0.11.0 (Forecast tab with recovery options, advanced stress tests).**
 > This repository implements the platform core described in the *RegGraph Europe – Pitch Pack*:
 > the regulatory-intelligence engine, the bank and corporate registry, insurance connectivity,
 > the financial exposure graph, the stress testing laboratory, the security model, multi-language

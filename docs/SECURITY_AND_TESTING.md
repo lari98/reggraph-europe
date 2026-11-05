@@ -105,6 +105,12 @@ Registry threats (Phase 2) — tests in `tests/security/test_registry_attacks.py
 | T92 | Hostile rule key, other tenant, bad date on the scope route | 404/422, no stack trace; tenant isolation gives 404 | `test_rule_scope_refuses_unknown_keys_missing_rights_and_hostile_input` |
 | T93 | Graph or timeline labels used to inject markup | labels set with `textContent`/SVG text only; strict CSP unchanged | `test_rule_network_and_drill_down_to_the_evidence` |
 | T94 | Drill-down unusable on phone or by keyboard | nodes focusable, Enter opens; no horizontal overflow; German texts | `test_rule_drill_down_is_translated_and_phone_safe` |
+| T95 | Forecast or analysis read without the right, unauthenticated, or across tenants | `stress:read` required; service account 403, no token 401, other tenant 404 | `test_forecast_refuses_bad_input_missing_rights_and_other_tenants` |
+| T96 | Hostile or out-of-range forecast parameters (scenario, horizon, seed, levers, holder) | validated and bounded (horizon 4-20, levers capped, LEI checked); 422, no stack trace | `test_forecast_refuses_bad_input_missing_rights_and_other_tenants`, `test_parameters_are_validated` |
+| T97 | Forecast results differ between calls or levers distort the comparison | fixed seed and common random numbers; same input gives the same output | `test_same_seed_same_answer_and_other_seed_differs`, `test_forecast_shape_levers_and_holder_drill` |
+| T98 | Forecast arithmetic does not add up | ledger identity closing = opening + earnings - loss - shock + raised; a single institution equals its place in the group | `test_ledger_adds_up_for_every_quarter`, `test_one_holder_alone_matches_the_same_holder_in_the_group` |
+| T99 | Scaled shocks leave the legal range or the cascade overflows the shock limit | scaling is capped (LGD and haircut 100%, FX -100%); cascade shocks are chunked | `test_scaling_stays_inside_the_legal_range`, `test_cascade_spreads_when_a_failed_holder_is_someone_elses_counterparty` |
+| T100 | Forecast or stress panels unusable on phone, by keyboard, or in German; markup injection via labels | SVG text only, no inline style, quarters focusable (Enter); no overflow | `test_forecast_is_translated_and_phone_safe`, `test_forecast_tab_drills_down_and_recovery_levers_react` |
 | T79 | Unreadable colours / third-party fonts | AA contrast tests, system fonts, CSP `img-src 'self'` | `test_text_colour_pairs_meet_wcag_aa`, `test_fonts_and_shapes` |
 
 Property-based tests (`TestProperties`, Hypothesis, 200 examples each) check that

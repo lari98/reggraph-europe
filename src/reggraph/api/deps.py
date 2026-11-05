@@ -16,6 +16,7 @@ from reggraph.core.logsafe import install_log_redaction
 from reggraph.currency.rates import Converter
 from reggraph.dashboard import DashboardService
 from reggraph.exposure import ExposureAnalysis, ExposureStore
+from reggraph.forecast import ForecastLab
 from reggraph.fx import RateBook
 from reggraph.i18n import Translator
 from reggraph.insurance import ContractStore
@@ -46,6 +47,7 @@ class Services:
     connectivity: Connectivity
     stress_store: StressStore
     stress: StressLab
+    forecast: ForecastLab
     ratebook: RateBook
     translator: Translator
     signer: TokenSigner
@@ -126,6 +128,7 @@ def build_services(
         connectivity=Connectivity(analysis, contracts, registry, converter_for),
         stress_store=stress_store,
         stress=stress,
+        forecast=ForecastLab(stress_store),
         ratebook=ratebook,
         translator=Translator(),
         signer=TokenSigner(settings.token_keys, settings.active_kid, clk),

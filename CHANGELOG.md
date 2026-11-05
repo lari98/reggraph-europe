@@ -9,6 +9,11 @@ module also has its own version in `module_versions.json`. Format follows
 Newest first. Written automatically by `python tools/module_manifest.py bump ...`.
 
 <!-- module-log -->
+- **app-shell 0.11.0** (2026-11-05, minor): Release 0.11.0: Forecast tab and advanced stress tests
+- **dashboard 0.10.0** (2026-11-05, minor): Forecast tab with drill-down to institution and quarter; stress run: ladder, reverse test, cascade
+- **api 0.9.0** (2026-11-05, minor): GET /v1/stress/runs/{id}/analysis, GET /v1/forecast, GET /v1/forecast/plan
+- **stress 0.2.0** (2026-11-05, minor): Advanced analysis: severity ladder, reverse stress test, contagion cascade
+- **forecast 0.1.0** (2026-11-05, new): Forecast lab: quarterly buffer outlook (P10-P90), scenarios, levers, recovery options
 - **app-shell 0.10.0** (2026-11-05, minor): Release 0.10.0: Rules drill-down to the evidence
 - **dashboard 0.9.0** (2026-11-05, minor): Rules drill-down: rule network graph, per-rule node graph, evidence timeline with audit proofs, institutions in scope, limit history
 - **api 0.8.0** (2026-11-05, minor): GET /v1/rules/{key}/scope: institutions a rule covers (for the rule drill-down)
@@ -67,6 +72,16 @@ Newest first. Written automatically by `python tools/module_manifest.py bump ...
 - **storage 0.2.0** (2026-11-03, minor): Migration 2: entity_versions and ownership_links with immutability triggers
 - **security 0.2.0** (2026-11-03, minor): Add registry:read and registry:write permissions to the role matrix
 - **registry 0.1.0** (2026-11-03, new): Phase 2: LEI-keyed entities, licences, ownership links, groups, entity-to-rule mapping
+
+## [0.11.0] - 2026-11-05
+
+### Added
+- **Forecast tab** (new module `forecast`): quarter-by-quarter outlook of capital buffers for up to 20 quarters with a P10 to P90 band, three scenarios (baseline, adverse, severe), stated assumptions, and a seeded simulation so results repeat.
+- Drill-down: tab, institution, quarter (waterfall: opening buffer + earnings - expected loss - stress shock + capital raised). Every quarter is also a ledger row and a CSV export.
+- **Recovery options**: capital raised now or after the shock, de-risking, or both, compared on the same simulated futures; per-institution capital needed and plain advice.
+- **Advanced stress tests** on every run page: severity ladder (0.5x to 4x), reverse stress test (how many times worse until each buffer is used up), contagion cascade (failed institutions hurt their lenders).
+- Endpoints `GET /v1/stress/runs/{id}/analysis`, `GET /v1/forecast`, `GET /v1/forecast/plan` (all need `stress:read`, read-only, nothing stored).
+- Texts in en/de/fr/it/es.
 
 ## [0.10.0] - 2026-11-05
 

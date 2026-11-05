@@ -65,7 +65,7 @@ const num = (v) => new Intl.NumberFormat(S.locale).format(Number(v) || 0);
 const pct = (share) => (Number(share) * 100).toFixed(1) + "%";
 const dateOf = (iso) => (iso ? String(iso).slice(0, 10) : "-");
 const LABEL_KEY = { title: "nav.overview", registry: "nav.entities", exposure: "nav.exposure", insurance: "nav.insurance",
-  stress: "nav.stress", rules: "nav.rules", connectors: "nav.data", unavailable: "unavail" };
+  stress: "nav.stress", forecast: "nav.forecast", rules: "nav.rules", connectors: "nav.data", unavailable: "unavail" };
 const label = (key, fallback) => (LABEL_KEY[key] && own(LABEL_KEY[key])) || fallback;     // page's own English if untranslated
 const word = (x) => own("w." + x) || cap(words(x));
 const cap = (x) => { const w = String(x); return w ? w[0].toUpperCase() + w.slice(1) : w; };
@@ -1001,6 +1001,7 @@ async function stressRun(id) {
     { title: "Status", get: (x) => (x.breach ? 1 : 0), render: (x) => (x.breach ? chip("BREACH", "bad") : x.capital_buffer ? chip("covered", "ok") : chip("no buffer set", "neutral")) }],
   rows: r.holders, csv: "stress-run-" + id, search: false, pageSize: 10 }), "span-8"));
   g.append(card("Biggest loss drivers", bars((r.top_contributors || []).map((x, i) => ({ name: nm(x.counterparty_lei), text: mc(x.gross_loss), ratio: Number(x.gross_loss) / Math.max(1, ...r.top_contributors.map((y) => Number(y.gross_loss))), href: "#/entity/" + enc(x.counterparty_lei), color: i }))), "span-4"));
+  g.append(stressAnalysis(id));
   g.append(card("Scenario", scen ? h("div", null, kv([["Title", scen.scenario.title], ["Version", scen.version_no], ["Insurance", scen.scenario.use_insurance ? "recoveries applied" : "ignored"]]), h("ul", null, scen.scenario.shocks.map((x) => h("li", { text: shockText(x) })))) : h("p", { class: "empty", text: "Scenario text unavailable." }), "span-6"));
   g.append(card("Integrity", h("div", null, h("p", { class: "muted", text: "Recomputes the result from the frozen inputs and checks hashes and the signature." }),
     h("button", { type: "button", class: "btn btn-primary", text: "Verify this run", onclick: async (ev) => {
@@ -1175,6 +1176,181 @@ PAGES.data = async () => {
   return g;
 };
 
+// ---------------------------------------------------------------- forecast (quarters into the future)
+// State of the controls lives in S.fc so a drill-down keeps the chosen scenario and levers.
+S.fc = S.fc || { run: 0, scenario: "adverse", quarters: 12, raise: 0, raiseQ: 1, derisk: 0 };
+const fcqs = (o) => Object.entries(o).map(([k, v]) => k + "=" + encodeURIComponent(v)).join("&");
+const fcQuery = (extra) => fcqs(Object.assign({ run: S.fc.run, scenario: S.fc.scenario, quarters: S.fc.quarters, raise_percent: S.fc.raise, raise_quarter: S.fc.raiseQ, derisk_percent: S.fc.derisk }, extra || {}));
+const qLabel = (iso) => { const d = new Date(String(iso).slice(0, 10) + "T00:00:00Z"); return "Q" + (Math.floor(d.getUTCMonth() / 3) + 1) + " " + String(d.getUTCFullYear()).slice(2); };
+const qName = (q, dates) => (q === 0 ? t("fc.now") : qLabel(dates[q]));
+
+// Fan chart: shaded P10-P90 band, median line, zero line, today's level, shock and recovery markers.
+function fanChart(bands, dates, o) {
+  const opt = o || {}, W = 700, H = 280, L = 64, R = 18, T = 16, B = 40, ccy = opt.ccy || "EUR", n = bands.length - 1;
+  const lo = Math.min(...bands.map((b) => b.p10)), hi = Math.max(...bands.map((b) => b.p90), lo + 1), pad = (hi - lo) * 0.08;
+  const y = (v) => T + (H - T - B) * (1 - (v - (lo - pad)) / (hi + pad - (lo - pad))), x = (q) => L + (q * (W - L - R)) / n;
+  const mc = (v) => moneyIn(v, ccy);
+  const svg = s("svg", { viewBox: "0 0 " + W + " " + H, class: "lines fan", role: "img", "aria-label": opt.label || t("fc.c.fan") });
+  for (let k = 0; k <= 4; k++) {
+    const v = lo - pad + ((hi + pad - (lo - pad)) * k) / 4;
+    svg.append(s("line", { x1: L, x2: W - R, y1: y(v).toFixed(1), y2: y(v).toFixed(1), class: "ln-grid" }), s("text", { x: L - 8, y: (y(v) + 4).toFixed(1), class: "ln-y" }, mc(v)));
+  }
+  const every = Math.ceil((n + 1) / 10);
+  bands.forEach((b, q) => { if (q % every === 0 || q === n) svg.append(s("text", { x: x(q).toFixed(1), y: H - 18, class: "ln-x" }, qName(q, dates))); });
+  const up = bands.map((b, q) => (q ? "L" : "M") + x(q).toFixed(1) + " " + y(b.p90).toFixed(1)).join(" ");
+  const down = bands.slice().reverse().map((b, i) => "L" + x(n - i).toFixed(1) + " " + y(b.p10).toFixed(1)).join(" ");
+  if (!opt.plain) svg.append(s("path", { d: up + " " + down + " Z", class: "fan-band" }));
+  if (lo < 0) svg.append(s("line", { x1: L, x2: W - R, y1: y(0).toFixed(1), y2: y(0).toFixed(1), class: "fan-zero" }), s("text", { x: W - R, y: (y(0) - 5).toFixed(1), class: "fan-zerot" }, t("fc.key.zero")));
+  svg.append(s("line", { x1: L, x2: W - R, y1: y(bands[0].p50).toFixed(1), y2: y(bands[0].p50).toFixed(1), class: "fan-base" }));
+  for (const [q, cls, text] of [[opt.shockQ, "fan-shock", t("fc.key.shock")], [opt.recoveryQ, "fan-rec", t("fc.key.rec")]]) {
+    if (q === undefined || q === null || q < 1 || q > n) continue;
+    svg.append(s("line", { x1: x(q).toFixed(1), x2: x(q).toFixed(1), y1: T, y2: H - B, class: cls }), s("text", { x: (x(q) + 4).toFixed(1), y: T + 10, class: "fan-mark " + cls }, text));
+  }
+  svg.append(s("path", { d: bands.map((b, q) => (q ? "L" : "M") + x(q).toFixed(1) + " " + y(b.p50).toFixed(1)).join(" "), class: "ln s1" }));
+  (opt.extra || []).forEach((ln, i) => svg.append(s("path", { d: ln.values.map((v, q) => (q ? "L" : "M") + x(q).toFixed(1) + " " + y(v).toFixed(1)).join(" "), class: "ln s" + (i + 2) + " fan-alt" })));
+  bands.forEach((b, q) => {
+    const col = s("g", { class: "fan-col", tabindex: opt.onPick && q ? 0 : -1, role: opt.onPick && q ? "button" : "presentation", "aria-label": qName(q, dates) + " " + mc(b.p50) },
+      s("title", {}, qName(q, dates) + " · P10 " + mc(b.p10) + " · P50 " + mc(b.p50) + " · P90 " + mc(b.p90)),
+      s("rect", { x: (x(q) - (W - L - R) / n / 2).toFixed(1), y: T, width: ((W - L - R) / n).toFixed(1), height: H - T - B, class: "fan-hit" }), s("circle", { cx: x(q).toFixed(1), cy: y(b.p50).toFixed(1), r: 3.5, class: "dt s1" }));
+    if (opt.onPick && q) { col.addEventListener("click", () => opt.onPick(q)); col.addEventListener("keydown", (ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); opt.onPick(q); } }); }
+    svg.append(col);
+  });
+  const key = h("div", { class: "pair-key" }, opt.plain ? null : h("span", null, h("i", { class: "sw fan-sw-band" }), t("fc.key.band")), h("span", null, h("i", { class: "sw s1" }), opt.mainName || t("fc.key.p50")),
+    ...(opt.extra || []).map((ln, i) => h("span", null, h("i", { class: "sw s" + (i + 2) }), ln.name)));
+  return h("div", null, svg, key);
+}
+
+// Three scenarios side by side: the middle path of each.
+function compareChart(res, ccy) {
+  const names = ["baseline", "adverse", "severe"], first = res[0];
+  return fanChart(first.series.map((e) => ({ p10: e.p50, p50: e.p50, p90: e.p50 })), first.dates, { ccy, plain: true, mainName: t("fc.s.baseline"), label: t("fc.c.cmp"), extra: [1, 2].map((i) => ({ name: t("fc.s." + names[i]), values: res[i].series.map((e) => e.p50) })), baselineName: names[0] });
+}
+
+// A waterfall for one quarter: opening buffer, what came in, what went out, closing buffer.
+function waterfall(steps, ccy) {
+  const W = 560, RH = 34, L = 150, R = 90, H = steps.length * RH + 10;
+  let run = 0; const rows = steps.map((st) => { const from = st.total ? 0 : run; run = st.total ? st.value : run + st.value; return { ...st, from, to: run }; });
+  const lo = Math.min(0, ...rows.flatMap((r) => [r.from, r.to])), hi = Math.max(1, ...rows.flatMap((r) => [r.from, r.to])), x = (v) => L + ((v - lo) / (hi - lo)) * (W - L - R);
+  const svg = s("svg", { viewBox: "0 0 " + W + " " + H, class: "wf", role: "img", "aria-label": t("fc.wf") });
+  rows.forEach((r, i) => {
+    const a = Math.min(x(r.from), x(r.to)), w = Math.max(2, Math.abs(x(r.to) - x(r.from))), y0 = 5 + i * RH;
+    svg.append(s("text", { x: L - 8, y: y0 + 19, class: "wf-l" }, r.name), s("rect", { x: a.toFixed(1), y: y0 + 5, width: w.toFixed(1), height: 20, rx: 4, class: "wf-bar " + (r.total ? "wf-t" : r.value >= 0 ? "wf-up" : "wf-dn") }),
+      s("text", { x: (Math.max(x(r.from), x(r.to)) + 6).toFixed(1), y: y0 + 19, class: "wf-v" }, (r.total || r.value < 0 ? "" : "+") + moneyIn(r.value, ccy)));
+  });
+  return h("div", { class: "lg-wrap" }, svg);
+}
+const quarterSteps = (e) => [{ name: t("fc.th.open"), value: e.opening, total: true }, { name: t("fc.th.earn"), value: e.earnings }, { name: t("fc.th.loss"), value: -e.expected_loss }, { name: t("fc.th.shock"), value: -e.shock }, { name: t("fc.th.raised"), value: e.raised },
+  { name: t("fc.th.close"), value: e.opening + e.earnings - e.expected_loss - e.shock + e.raised, total: true }];
+const openQuarter = (title, e, d, ccy) => drawer(title, Promise.resolve(h("div", null, h("p", { class: "muted small", text: t("fc.q.s") }), waterfall(quarterSteps(e), ccy),
+  kv([[t("fc.th.exp"), moneyIn(e.exposure, ccy)], [t("fc.th.p10"), moneyIn(e.p10, ccy)], [t("fc.th.p50"), moneyIn(e.p50, ccy)], [t("fc.th.p90"), moneyIn(e.p90, ccy)], ...(e.any_breach_probability !== undefined ? [[t("fc.th.breach"), pct(e.any_breach_probability)]] : [])]))));
+const recText = (q, dates, n) => (q === 0 ? t("fc.k.rec.none") : q === null || q === undefined ? t("fc.k.rec.no", { n }) : qLabel(dates[q]));
+
+function fcControls(runs, onChange) {
+  const sel = (id, label, opts, val) => h("label", { class: "fc-ctl" }, h("span", { text: label }), h("select", { id, onchange: (ev) => { onChange(id, ev.target.value); } }, opts.map(([v, tx]) => h("option", { value: v, text: tx, selected: String(v) === String(val) ? "selected" : null }))));
+  return h("div", { class: "fc-ctls" },
+    sel("run", t("fc.run"), runs.map((r) => [r.run_id, "#" + r.run_id + " " + words(r.scenario_key) + " · " + r.as_of]), S.fc.run),
+    sel("scenario", t("fc.scenario"), ["baseline", "adverse", "severe"].map((k) => [k, t("fc.s." + k)]), S.fc.scenario),
+    sel("quarters", t("fc.horizon"), [8, 12, 16, 20].map((v) => [v, String(v)]), S.fc.quarters),
+    sel("raise", t("fc.raise"), [0, 10, 25, 50, 100].map((v) => [v, v + "%"]), S.fc.raise),
+    sel("raiseQ", t("fc.raiseq"), [1, 2, 3, 4, 6].map((v) => [v, "Q" + v]), S.fc.raiseQ),
+    sel("derisk", t("fc.derisk"), [0, 10, 15, 25, 50].map((v) => [v, v + "%"]), S.fc.derisk));
+}
+const fcKeys = { run: "run", scenario: "scenario", quarters: "quarters", raise: "raise", raiseQ: "raiseQ", derisk: "derisk" };
+const fcSet = (id, v) => { S.fc[fcKeys[id]] = id === "scenario" ? v : Number(v); if (id === "run") S.fc.holderCache = null; route(true); };
+const FC_LABEL = { none: "fc.opt.none", raise_early: "fc.opt.raise_early", raise_late: "fc.opt.raise_late", derisk: "fc.opt.derisk", combined: "fc.opt.combined" };
+
+PAGES.forecast = async (a) => {
+  await entities().catch(() => null);
+  const runs = await api("/v1/stress/runs?limit=50");
+  if (!runs.length) return h("div", { class: "grid" }, h("div", { class: "span-12" }, pageHead(t("fc.title"))), card(t("fc.title"), h("p", { class: "empty", text: t("fc.none") }), "span-12"));
+  if (!runs.some((r) => r.run_id === S.fc.run)) S.fc.run = runs[0].run_id;
+  S.fc.raiseQ = Math.min(S.fc.raiseQ, S.fc.quarters);
+  if (a[0]) return forecastHolder(a[0], runs);
+  const [main, other1, other2, plan] = await Promise.all([api("/v1/forecast?" + fcQuery()), api("/v1/forecast?" + fcQuery({ scenario: "baseline" })), api("/v1/forecast?" + fcQuery({ scenario: "severe" })),
+    api("/v1/forecast/plan?" + fcqs({ run: S.fc.run, scenario: S.fc.scenario, quarters: S.fc.quarters }))]);
+  const sm = main.summary, ccy = main.currency, dates = main.dates, mc = (v) => moneyIn(v, ccy);
+  const shockQ = main.assumptions.shock_severity > 0 ? 2 : null;
+  const g = h("div", { class: "grid" });
+  g.append(h("div", { class: "span-12" }, pageHead(t("fc.title"), null, h("div", { class: "chips" }, chip(t("fc.s." + S.fc.scenario), S.fc.scenario === "severe" ? "bad" : S.fc.scenario === "adverse" ? "warn" : "ok"), chip("#" + S.fc.run, "neutral"), chip(S.fc.quarters + " Q", "neutral")))));
+  g.append(h("p", { class: "muted span-12 ru-intro-p", text: t("fc.sub") }));
+  g.append(card(t("fc.controls"), h("div", null, fcControls(runs, fcSet), h("p", { class: "muted small", text: t("fc.controls.s") })), "span-12"));
+  g.append(h("div", { class: "span-12 kpis" }, kpi("k2", mc(sm.buffer_now), t("fc.k.now")), kpi(sm.lowest_p10 < 0 ? "k4" : "k1", mc(sm.lowest_p10), t("fc.k.low"), qLabel(dates[sm.lowest_p10_quarter])),
+    kpi(sm.institutions_at_risk ? "k4" : "k1", sm.institutions_at_risk + " / " + sm.institutions, t("fc.k.risk"), t("fc.k.risk.s")), kpi("k3", recText(sm.recovery_quarter, dates, S.fc.quarters), t("fc.k.rec")), kpi("k5", mc(sm.capital_needed), t("fc.k.need"), t("fc.k.need.s"))));
+  if (sm.assumed_buffers) g.append(h("p", { class: "muted small span-12", text: t("fc.assumed", { n: sm.assumed_buffers }) }));
+  g.append(card(t("fc.c.fan"), fanChart(main.series, dates, { ccy, shockQ, recoveryQ: sm.recovery_quarter, onPick: (q) => openQuarter(qLabel(dates[q]), main.series[q], main, ccy) }), "span-8", null, t("fc.c.fan.s")));
+  const A = main.assumptions, pp = (v) => (v * 100).toFixed(2).replace(/\.?0+$/, "") + "%";
+  g.append(card(t("fc.c.assume"), h("div", null, kv([[t("fc.a.growth"), pp(A.exposure_growth)], [t("fc.a.loss"), pp(A.loss_rate)], [t("fc.a.earn"), pp(A.earnings)], [t("fc.a.shock"), Math.round(A.shock_severity * 100) + "%"], [t("fc.a.mult"), "x" + A.loss_multiplier], [t("fc.a.vol"), pp(A.volatility)]]), h("p", { class: "muted small", text: t("fc.a.note") })), "span-4"));
+  g.append(card(t("fc.c.cmp"), compareChart([other1, main, other2], ccy), "span-6", null, t("fc.c.cmp.s")));
+  const weak = main.holders.slice().sort((p, q) => q.breach_probability - p.breach_probability || p.lowest_p50 / p.buffer - q.lowest_p50 / q.buffer)[0];
+  g.append(card(t("fc.c.weak") + ": " + nm(weak.lei), h("div", null, fanChart(weak.bands, dates, { ccy, shockQ, recoveryQ: weak.recovery_quarter }), h("p", null, h("a", { href: "#/forecast/" + enc(weak.lei), text: t("fc.go.drill") }))), "span-6", null, t("fc.c.weak.s")));
+  g.append(card(t("fc.c.plan"), h("div", null, h("p", { class: "muted small", text: t("fc.c.plan.s") }), table({ cols: [{ title: t("fc.th.option"), get: (o) => o.title, render: (o) => h("strong", { text: t(FC_LABEL[o.key]) }) }, { title: t("fc.th.raised"), num: true, get: (o) => o.capital_raised, render: (o) => (o.capital_raised ? mc(o.capital_raised) : "-") },
+    { title: t("fc.k.risk"), num: true, get: (o) => o.institutions_at_risk, render: (o) => chip(o.institutions_at_risk + " / " + sm.institutions, o.institutions_at_risk ? "bad" : "ok") }, { title: t("fc.k.low"), num: true, get: (o) => o.lowest_p10, render: (o) => mc(o.lowest_p10) },
+    { title: t("fc.th.endp50"), num: true, get: (o) => o.end_p50, render: (o) => mc(o.end_p50) }], rows: plan.options, search: false, pageSize: 6 }), h("p", { class: "muted small", text: planAdvice(plan.options) })), "span-12"));
+  g.append(card(t("fc.c.inst"), table({ cols: [{ title: t("th.name"), get: (r) => nm(r.lei) }, { title: t("fc.th.buffer"), num: true, get: (r) => r.buffer, render: (r) => mc(r.buffer) + (r.buffer_assumed ? " *" : "") },
+    { title: t("fc.th.lowest"), num: true, get: (r) => r.lowest_p50, render: (r) => mc(r.lowest_p50) + " · " + qLabel(dates[r.lowest_quarter]) }, { title: t("fc.th.breach"), num: true, get: (r) => r.breach_probability, render: (r) => chip(pct(r.breach_probability), r.breach_probability >= 0.1 ? "bad" : r.breach_probability > 0 ? "warn" : "ok") },
+    { title: t("fc.k.rec"), get: (r) => (r.recovery_quarter === null ? 99 : r.recovery_quarter), render: (r) => recText(r.recovery_quarter, dates, S.fc.quarters) }, { title: t("fc.k.need"), num: true, get: (r) => r.capital_needed, render: (r) => (r.capital_needed ? mc(r.capital_needed) : "-") }],
+  rows: main.holders, href: (r) => "#/forecast/" + enc(r.lei), csv: "forecast-institutions", pageSize: 10 }), "span-12", null, t("fc.c.inst.s")));
+  g.append(card(t("fc.c.ledger"), table({ cols: [{ title: t("fc.th.quarter"), get: (e) => e.q, render: (e) => qLabel(dates[e.q]) }, { title: t("fc.th.open"), num: true, get: (e) => e.opening, render: (e) => mc(e.opening) }, { title: t("fc.th.earn"), num: true, get: (e) => e.earnings, render: (e) => mc(e.earnings) },
+    { title: t("fc.th.loss"), num: true, get: (e) => e.expected_loss, render: (e) => mc(e.expected_loss) }, { title: t("fc.th.shock"), num: true, get: (e) => e.shock, render: (e) => mc(e.shock) }, { title: t("fc.th.raised"), num: true, get: (e) => e.raised, render: (e) => mc(e.raised) },
+    { title: t("fc.th.band"), get: (e) => e.p50, render: (e) => mc(e.p10) + " / " + mc(e.p50) + " / " + mc(e.p90) }, { title: t("fc.th.breach"), num: true, get: (e) => e.any_breach_probability, render: (e) => pct(e.any_breach_probability) }],
+  rows: main.series.slice(1), open: (e) => openQuarter(qLabel(dates[e.q]), e, main, ccy), csv: "forecast-quarters", search: false, pageSize: 8 }), "span-12", null, t("fc.c.ledger.s")));
+  return g;
+};
+function planAdvice(opts) {
+  const none = opts.find((o) => o.key === "none"), safe = opts.filter((o) => o.key !== "none" && o.institutions_at_risk < none.institutions_at_risk).sort((p, q) => p.institutions_at_risk - q.institutions_at_risk || p.capital_raised - q.capital_raised)[0];
+  if (!none.institutions_at_risk) return t("fc.adv.ok");
+  return safe ? t("fc.adv.best", { name: t(FC_LABEL[safe.key]), a: none.institutions_at_risk, b: safe.institutions_at_risk }) : t("fc.adv.none");
+}
+
+// One institution: its own outlook, the quarter ledger, and what each recovery lever would do.
+async function forecastHolder(lei, runs) {
+  const base = { holder: lei };
+  const main = await api("/v1/forecast?" + fcQuery(base)), hd = main.holders[0], ccy = main.currency, dates = main.dates, mc = (v) => moneyIn(v, ccy);
+  const ratio = hd.buffer ? Math.min(100, Math.ceil(((hd.capital_needed * 1.1) / hd.buffer) * 100)) : 0;
+  const variants = [["fc.opt.none", { raise_percent: 0, derisk_percent: 0 }], ["fc.opt.raise_early", { raise_percent: ratio, raise_quarter: 1, derisk_percent: 0 }], ["fc.opt.raise_late", { raise_percent: ratio, raise_quarter: Math.min(3, S.fc.quarters), derisk_percent: 0 }], ["fc.opt.derisk", { raise_percent: 0, derisk_percent: 15 }]];
+  const outs = await Promise.all(variants.map(([, v]) => api("/v1/forecast?" + fcQuery({ ...base, ...v }))));
+  const g = h("div", { class: "grid" });
+  g.append(h("div", { class: "span-12" }, pageHead(nm(lei), [h("a", { href: "#/forecast", text: t("fc.title") }), " / ", lei], h("div", { class: "chips" }, chip(t("fc.s." + S.fc.scenario), "neutral"), hd.buffer_assumed ? chip(t("fc.assumed.chip"), "warn") : null))));
+  g.append(card(t("fc.controls"), fcControls(runs, fcSet), "span-12"));
+  g.append(h("div", { class: "span-12 kpis" }, kpi("k2", mc(hd.buffer), t("fc.th.buffer")), kpi("k4", mc(hd.stress_net_loss), t("fc.th.stress")), kpi(hd.breach_probability >= 0.1 ? "k4" : "k1", pct(hd.breach_probability), t("fc.th.breach")),
+    kpi("k3", recText(hd.recovery_quarter, dates, S.fc.quarters), t("fc.k.rec")), kpi("k5", mc(hd.capital_needed), t("fc.k.need"), hd.buffer ? Math.round((hd.capital_needed / hd.buffer) * 100) + "% " + t("fc.of.buffer") : "")));
+  g.append(card(t("fc.c.fan"), fanChart(hd.bands, dates, { ccy, shockQ: main.assumptions.shock_severity > 0 ? 2 : null, recoveryQ: hd.recovery_quarter, onPick: (q) => openQuarter(qLabel(dates[q]), hd.ledger[q - 1], main, ccy) }), "span-8", null, t("fc.c.fan.s")));
+  g.append(card(t("fc.how"), h("div", null, h("p", { text: hd.capital_needed ? t("fc.how.need", { a: mc(hd.capital_needed), b: ratio }) : t("fc.how.ok") }), h("ul", { class: "refs" }, h("li", null, entLink(lei, t("fc.go.entity"))), h("li", null, h("a", { href: "#/stress/" + S.fc.run, text: t("fc.go.run", { n: S.fc.run }) })))), "span-4"));
+  g.append(card(t("fc.c.plan"), table({ cols: [{ title: t("fc.th.option"), get: (r) => r.t, render: (r) => h("strong", { text: r.t }) }, { title: t("fc.th.breach"), num: true, get: (r) => r.b, render: (r) => chip(pct(r.b), r.b >= 0.1 ? "bad" : r.b > 0 ? "warn" : "ok") },
+    { title: t("fc.k.low"), num: true, get: (r) => r.low, render: (r) => mc(r.low) }, { title: t("fc.k.rec"), get: (r) => r.rec, render: (r) => recText(r.rec, dates, S.fc.quarters) }, { title: t("fc.th.endp50"), num: true, get: (r) => r.end, render: (r) => mc(r.end) }],
+  rows: outs.map((o, i) => ({ t: t(variants[i][0]), b: o.holders[0].breach_probability, low: o.summary.lowest_p10, rec: o.holders[0].recovery_quarter, end: o.summary.end_p50 })), search: false, pageSize: 6 }), "span-12"));
+  g.append(card(t("fc.c.ledger"), table({ cols: [{ title: t("fc.th.quarter"), get: (e) => e.q, render: (e) => qLabel(dates[e.q]) }, { title: t("fc.th.open"), num: true, get: (e) => e.opening, render: (e) => mc(e.opening) }, { title: t("fc.th.earn"), num: true, get: (e) => e.earnings, render: (e) => mc(e.earnings) },
+    { title: t("fc.th.loss"), num: true, get: (e) => e.expected_loss, render: (e) => mc(e.expected_loss) }, { title: t("fc.th.shock"), num: true, get: (e) => e.shock, render: (e) => mc(e.shock) }, { title: t("fc.th.raised"), num: true, get: (e) => e.raised, render: (e) => mc(e.raised) },
+    { title: t("fc.th.band"), get: (e) => e.p50, render: (e) => mc(e.p10) + " / " + mc(e.p50) + " / " + mc(e.p90) }], rows: hd.ledger, open: (e) => openQuarter(qLabel(dates[e.q]), e, main, ccy), csv: "forecast-" + lei, search: false, pageSize: 8 }), "span-12", null, t("fc.c.ledger.s")));
+  return g;
+}
+
+// ---------------------------------------------------------------- advanced stress panels (run page)
+function ladderChart(steps, ccy) {
+  const W = 620, H = 230, L = 62, R = 14, T = 22, B = 34, max = Math.max(1, ...steps.map((x) => Number(x.gross_loss))), bw = (W - L - R) / steps.length;
+  const y = (v) => T + (H - T - B) * (1 - v / max), svg = s("svg", { viewBox: "0 0 " + W + " " + H, class: "lines ladder", role: "img", "aria-label": t("st.ladder") });
+  for (let k = 0; k <= 4; k++) { const v = (max * k) / 4; svg.append(s("line", { x1: L, x2: W - R, y1: y(v).toFixed(1), y2: y(v).toFixed(1), class: "ln-grid" }), s("text", { x: L - 8, y: (y(v) + 4).toFixed(1), class: "ln-y" }, moneyIn(v, ccy))); }
+  steps.forEach((st, i) => {
+    const x0 = L + i * bw + bw * 0.14, w = bw * 0.36, one = Number(st.multiplier) === 1;
+    for (const [j, key, cls] of [[0, "gross_loss", "s3"], [1, "net_loss", "s2"]]) { const v = Number(st[key]); svg.append(s("rect", { x: (x0 + j * (w + 3)).toFixed(1), y: y(v).toFixed(1), width: w.toFixed(1), height: Math.max(1, H - B - y(v)).toFixed(1), rx: 3, class: "lad-bar " + cls }, s("title", {}, st.multiplier + "x · " + t(key === "gross_loss" ? "th.gross" : "th.net") + " " + moneyIn(v, ccy)))); }
+    svg.append(s("text", { x: (L + i * bw + bw / 2).toFixed(1), y: H - 14, class: "ln-x" + (one ? " lad-one" : "") }, st.multiplier + "x"), s("text", { x: (L + i * bw + bw / 2).toFixed(1), y: 12, class: "ln-x lad-b" + (st.breaches ? " lad-bad" : "") }, st.breaches ? st.breaches + " " + t("st.breaches") : "OK"));
+  });
+  return h("div", null, svg, h("div", { class: "pair-key" }, h("span", null, h("i", { class: "sw s3" }), t("th.gross")), h("span", null, h("i", { class: "sw s2" }), t("th.net"))));
+}
+function stressAnalysis(id) {
+  return lazy(t("st.adv"), () => api("/v1/stress/runs/" + id + "/analysis"), (d) => {
+    const mc = (v) => moneyIn(v, d.currency), last = d.cascade[d.cascade.length - 1], failed = d.cascade.reduce((n, r) => n + r.newly_failed.length, 0);
+    return h("div", { class: "grid st-adv" },
+      h("div", { class: "span-12" }, h("p", { class: "muted small", text: d.system_multiplier ? t("st.sys", { m: d.system_multiplier }) : t("st.sys.none") })),
+      h("div", { class: "span-6" }, h("h3", { text: t("st.ladder") }), h("p", { class: "muted small", text: t("st.ladder.s") }), ladderChart(d.ladder, d.currency)),
+      h("div", { class: "span-6" }, h("h3", { text: t("st.casc") }), h("p", { class: "muted small", text: t("st.casc.s") }), table({ cols: [{ title: t("st.round"), num: true, get: (r) => r.round, render: (r) => (r.round ? String(r.round) : t("st.round0")) }, { title: t("st.newfail"), get: (r) => r.newly_failed.length, render: (r) => (r.newly_failed.length ? h("span", null, r.newly_failed.map((l, i) => h("span", null, i ? ", " : "", entLink(l)))) : t("st.none.failed")) },
+        { title: t("th.net"), num: true, get: (r) => r.net_loss, render: (r) => mc(r.net_loss) }, { title: t("st.breaches"), num: true, get: (r) => r.breaches }], rows: d.cascade, search: false, pageSize: 6 }), h("p", { class: "muted small", text: failed ? t("st.casc.sum", { a: failed, b: last.breaches }) : t("st.casc.calm") })),
+      h("div", { class: "span-12" }, h("h3", { text: t("st.rev") }), h("p", { class: "muted small", text: t("st.rev.s") }), table({ cols: [{ title: t("th.name"), get: (b) => nm(b.holder_lei), render: (b) => entLink(b.holder_lei) }, { title: t("fc.th.buffer"), num: true, get: (b) => b.capital_buffer, render: (b) => mc(b.capital_buffer) }, { title: t("st.loss1"), num: true, get: (b) => b.net_loss, render: (b) => mc(b.net_loss) },
+        { title: t("st.break"), num: true, get: (b) => (b.multiplier === null ? 99 : Number(b.multiplier)), render: (b) => (b.multiplier === null ? chip(t("st.never"), "ok") : chip(b.multiplier + "x" + (b.already_breached ? " · " + t("st.already") : ""), b.already_breached ? "bad" : Number(b.multiplier) < 2 ? "warn" : "info")) }],
+      rows: d.reverse, csv: "stress-reverse-" + id, search: false, pageSize: 8 })));
+  }, { class: "span-12", sub: t("st.adv.s") });
+}
+
 // ---------------------------------------------------------------- router and shell
 const NAV = [
   ["overview", "title", "Overview", "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"],
@@ -1182,6 +1358,7 @@ const NAV = [
   ["exposure", "exposure", "Exposure", "M4 20V10M10 20V4M16 20v-8M22 20H2"],
   ["insurance", "insurance", "Insurance", "M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"],
   ["stress", "stress", "Stress tests", "M3 12h4l3-8 4 16 3-8h4"],
+  ["forecast", "forecast", "Forecast", "M3 17l5-5 4 4 8-9M15 7h6v6"],
   ["rules", "rules", "Rules", "M6 3h9l4 4v14H6zM14 3v5h5M9 13h7M9 17h7"],
   ["data", "connectors", "Data & audit", "M4 6c0-2 16-2 16 0v12c0 2-16 2-16 0zM4 12c0 2 16 2 16 0M4 6c0 2 16 2 16 0"],
 ];

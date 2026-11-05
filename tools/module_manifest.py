@@ -53,6 +53,7 @@ MODULES: Final[dict[str, tuple[str, ...]]] = {
     "insurance": ("src/reggraph/insurance",),
     "connectivity": ("src/reggraph/connectivity",),
     "stress": ("src/reggraph/stress",),
+    "forecast": ("src/reggraph/forecast",),
     "netio": ("src/reggraph/netio",),
     "connectors": ("src/reggraph/connectors",),
     "dashboard": ("src/reggraph/dashboard",),

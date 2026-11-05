@@ -449,3 +449,26 @@ a.tile:hover .tile-r, a.tile:focus-visible .tile-r { stroke: var(--ink); stroke-
 @media print { .lg-wrap { overflow: visible; } }
 .drawer-b > * { min-width: 0; } .rule-panel { min-width: 0; } .rule-panel .kv dd { overflow-wrap: anywhere; }
 .card-body select { max-width: 100%; }
+
+/* ---- forecast tab, fan chart, waterfall, advanced stress panels ---- */
+.fc-ctls { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px 14px; }
+.fc-ctl { display: grid; gap: 4px; min-width: 0; font-size: 12px; color: var(--muted); }
+.fc-ctl select { max-width: 100%; }
+.ru-intro-p { margin: 0; }
+.fan { max-height: 340px; }
+.fan-band { fill: var(--c1); opacity: .18; stroke: none; }
+.fan-zero { stroke: var(--bad); stroke-width: 1.5; stroke-dasharray: 5 4; }
+.lines text.fan-zerot { fill: var(--bad); text-anchor: end; font-size: 10px; }
+.fan-base { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 2 4; }
+.fan-shock { stroke: var(--c3); stroke-width: 1.5; stroke-dasharray: 3 3; } .fan-rec { stroke: var(--ok); stroke-width: 1.5; stroke-dasharray: 3 3; }
+.lines text.fan-mark { font-size: 10px; } .lines text.fan-shock { fill: var(--c3); stroke: none; } .lines text.fan-rec { fill: var(--ok); stroke: none; }
+.fan-alt { stroke-dasharray: none; }
+.fan-hit { fill: transparent; } .fan-col { cursor: pointer; outline: none; } .fan-col .dt { opacity: 0; } .fan-col:hover .dt, .fan-col:focus-visible .dt { opacity: 1; }
+.fan-col:hover .fan-hit, .fan-col:focus-visible .fan-hit { fill: var(--c1); opacity: .08; }
+.fan-sw-band { background: var(--c1); opacity: .35; }
+.wf { display: block; width: 100%; min-width: 440px; height: auto; }
+.wf-l { text-anchor: end; font-size: 11px; fill: var(--ink, currentColor); } .wf-v { font-size: 11px; fill: var(--muted); }
+.wf-up { fill: var(--ok); } .wf-dn { fill: var(--bad); } .wf-t { fill: var(--c1); }
+.ladder .lad-bar.s3 { fill: var(--c3); stroke: none; } .ladder .lad-bar.s2 { fill: var(--c2); stroke: none; }
+.lines text.lad-b { font-size: 10px; } .lines text.lad-bad { fill: var(--bad); font-weight: 700; } .lines text.lad-one { font-weight: 700; fill: var(--ink, currentColor); }
+.st-adv h3 { margin: 4px 0 4px; }

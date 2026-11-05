@@ -35,6 +35,7 @@ from reggraph.security.rbac import Permission, Principal
 from reggraph.security.signing import ResultSigner
 from reggraph.storage.base import Db
 from reggraph.stress import engine
+from reggraph.stress.analysis import Analysis, analyse
 from reggraph.stress.engine import SnapCover, SnapRow, Snapshot, StressResult
 from reggraph.stress.models import DefaultShock, ScenarioInput, canonical, sha256
 from reggraph.stress.store import MAX_RUNS_PER_TENANT, RunRecord, StoredRun, StressStore
@@ -257,6 +258,18 @@ class StressLab:
         stored = self._store.get_run(who, run_id)
         loaded: dict[str, object] = json.loads(stored.inputs_json)
         return loaded
+
+    def analyse(self, who: Principal, run_id: int) -> Analysis:
+        """Severity ladder, reverse stress test and contagion cascade for a stored run."""
+        stored = self._store.get_run(who, run_id)
+        try:
+            scenario = ScenarioInput.model_validate(json.loads(stored.scenario_json))
+            inputs = json.loads(stored.inputs_json)
+            snapshot = Snapshot.model_validate(inputs["snapshot"])
+            buffers = {k: Decimal(v) for k, v in inputs["buffers"].items()}
+        except (ValueError, KeyError, TypeError, ArithmeticError) as exc:
+            raise ValidationFailure("stored run cannot be analysed") from exc
+        return analyse(scenario, snapshot, buffers)
 
     def verify(self, who: Principal, run_id: int) -> Verification:
         stored: StoredRun = self._store.get_run(who, run_id)

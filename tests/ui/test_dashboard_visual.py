@@ -209,7 +209,7 @@ ROUTES = [
     "overview", "entities", f"entity/{L['NORDHAFEN']}", f"entity/{L['NORDHAFEN']}/group",
     f"entity/{L['NORDHAFEN']}/exposure", f"entity/{L['NORDHAFEN']}/insurance",
     f"entity/{L['NORDHAFEN']}/rules", f"entity/{L['NORDHAFEN']}/network",
-    f"entity/{L['NORDHAFEN']}/history", "exposure", "insurance", "stress", "stress/3",
+    f"entity/{L['NORDHAFEN']}/history", "exposure", "insurance", "stress", "stress/3", "forecast",
     "rules", "data",
 ]  # fmt: skip
 
@@ -451,6 +451,83 @@ def test_rule_drill_down_is_translated_and_phone_safe(browser: Any, server: dict
     page.wait_for_selector(".rule-panel svg.etl")
     assert "Nachweis-Zeitleiste" in page.inner_text(".rule-panel")
     assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
+    assert page.evaluate("document.querySelector('.drawer').scrollWidth <= window.innerWidth")
+    assert page.problems == []
+    page.context.close()
+
+
+def test_forecast_tab_drills_down_and_recovery_levers_react(
+    browser: Any, server: dict[str, str]
+) -> None:
+    """0.11.0: Forecast tab - fan chart, quarter breakdown, institution drill-down, levers."""
+    page = open_page(browser, server["admin"], size=(1440, 900))
+    page.wait_for_selector(".kpi")
+    settle(page)
+    page.locator('nav a[data-page="forecast"]').click()
+    page.wait_for_selector("svg.fan")
+    settle(page)
+    main = page.locator("#main")
+    assert page.locator("#main h1").inner_text() == "Forecast"
+    assert page.locator("svg.fan").count() >= 2 and page.locator("svg.fan .fan-band").count() >= 1
+    assert page.locator("svg.fan .fan-col").count() >= 13
+    assert "How to recover" in main.inner_text() and "Quarter by quarter" in main.inner_text()
+    assert page.locator(".fc-ctls select").count() == 6
+    # a quarter opens the waterfall that explains the change
+    page.locator("svg.fan").first.locator(".fan-col").nth(2).click()
+    _wait(page, "document.querySelector('.drawer .wf') !== null", "quarter drawer")
+    assert "Opening buffer" in page.inner_text(".drawer")
+    page.keyboard.press("Escape")
+    # changing the scenario redraws with the new assumptions
+    page.select_option("#scenario", "severe")
+    _wait(
+        page,
+        "document.querySelector('.chip-bad') !== null || document.querySelector('.chip-warn') !== null",
+        "redraw",
+    )
+    page.wait_for_timeout(500)
+    assert page.locator("#main .chips").first.inner_text().startswith("Severe")
+    # drill down to an institution and see its ledger and recovery options
+    page.locator("#main table a").first.click()
+    page.wait_for_selector(".crumbs a[href='#/forecast']")
+    page.wait_for_selector("svg.fan")
+    assert "What to do" in page.inner_text("#main") and "Raise capital now" in page.inner_text(
+        "#main"
+    )
+    assert page.locator("#main table").count() >= 2
+    assert page.problems == []
+    page.context.close()
+
+
+def test_stress_run_shows_ladder_reverse_test_and_cascade(
+    browser: Any, server: dict[str, str]
+) -> None:
+    page = open_page(browser, server["admin"], size=(1440, 900))
+    page.wait_for_selector(".kpi")
+    settle(page)
+    go(page, "stress/1")
+    page.wait_for_selector(".st-adv svg.ladder")
+    assert page.locator(".st-adv .lad-bar").count() == 12
+    text = page.inner_text(".st-adv")
+    assert (
+        "Reverse stress test" in text and "Contagion cascade" in text and "Severity ladder" in text
+    )
+    assert page.problems == []
+    page.context.close()
+
+
+def test_forecast_is_translated_and_phone_safe(browser: Any, server: dict[str, str]) -> None:
+    page = open_page(browser, server["admin"], size=(390, 844), locale="de-DE")
+    page.wait_for_selector(".kpi")
+    settle(page)
+    go(page, "forecast")
+    page.wait_for_selector("svg.fan")
+    settle(page)
+    assert page.locator("#main h1").inner_text() == "Prognose"
+    assert "Wie man sich erholt" in page.inner_text("#main")
+    assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
+    page.locator("svg.fan").first.locator(".fan-col").nth(2).focus()
+    page.keyboard.press("Enter")  # keyboard users can open a quarter too
+    _wait(page, "document.querySelector('.drawer .wf') !== null", "quarter drawer")
     assert page.evaluate("document.querySelector('.drawer').scrollWidth <= window.innerWidth")
     assert page.problems == []
     page.context.close()
