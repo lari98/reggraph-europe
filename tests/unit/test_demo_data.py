@@ -70,3 +70,16 @@ def test_small_set_is_unchanged_for_tests() -> None:
     services = _services()
     seed(services)
     assert services.db.query("SELECT COUNT(*) AS n FROM stress_runs", ())[0]["n"] == 3
+
+
+def test_rules_have_real_references_and_every_status(rich: Services) -> None:
+    rows = rich.db.query("SELECT status, COUNT(*) AS n FROM rule_versions GROUP BY status", ())
+    by = {r["status"]: r["n"] for r in rows}
+    for status in ("approved", "draft", "rejected", "superseded", "withdrawn"):
+        assert by.get(status, 0) >= 1, status
+    assert by["approved"] >= 15
+    cites = rich.db.query("SELECT payload_json FROM rule_versions", ())
+    text = " ".join(str(r["payload_json"]) for r in cites)
+    for ref in ("575/2013", "2015/61", "2009/138/EC", "2022/2554", "SR 952.03"):
+        assert ref in text, ref
+    assert "illustrative" in text.lower() or "demo summary" in text.lower()

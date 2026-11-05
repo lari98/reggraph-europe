@@ -99,6 +99,8 @@ Registry threats (Phase 2) — tests in `tests/security/test_registry_attacks.py
 | T86 | A map or chart pulling data from outside, or leaking through the page policy | map and charts are self-drawn SVG; no outside request, no inline style | `test_overview_pictures_map_gauge_grid_and_bars`, `test_every_page_renders_cleanly_and_stays_local` |
 | T87 | Hostile country code in the address bar rendered or executed | the route accepts only two letters, anything else shows an error; all text is set with `textContent` | `test_country_page_print_view_and_data_page` |
 | T88 | Demo data mistaken for real data | every demo name carries "(demo)", rates are labelled invented, demo mode is loopback-only | `test_rich_set_is_large_and_weighted_to_dach` |
+| T89 | Demo rule text mistaken for legal advice | rules are labelled "(demo summary)", the page shows a notice, sources link to the official text | `test_rules_page_explains_itself_and_shows_the_pictures`, `test_rules_have_real_references_and_every_status` |
+| T90 | Source link used for script injection or leaking the page | links are rendered only for https URLs with `rel="noopener noreferrer"`; rule text is set with `textContent` | `test_rules_page_explains_itself_and_shows_the_pictures` |
 | T79 | Unreadable colours / third-party fonts | AA contrast tests, system fonts, CSP `img-src 'self'` | `test_text_colour_pairs_meet_wcag_aa`, `test_fonts_and_shapes` |
 
 Property-based tests (`TestProperties`, Hypothesis, 200 examples each) check that

@@ -916,15 +916,104 @@ async function stressRun(id) {
   return g;
 }
 
-PAGES.rules = async () => {
-  const [rules, tasks] = await Promise.all([api("/v1/rules"), api("/v1/review-tasks").catch(() => [])]);
+// Rules: for someone who has never seen a rule library. Top to bottom: what rules are and how they get
+// approved, six numbers, pictures (status, countries, who, timeline, coverage), the limits in plain words,
+// a finder ("which rules apply to my institution?"), the official sources and the full library.
+const CMP = { ">=": "ru.ge", "<=": "ru.le", ">": "ru.gt", "<": "ru.lt", "=": "ru.eq" };
+const limitText = (q) => q.name + " " + t(CMP[q.comparator] || "ru.eq") + " " + Number(q.value).toLocaleString(S.locale) + " " + q.unit;
+const dayNum = (iso) => Date.parse(String(iso).slice(0, 10) + "T00:00:00Z");
+
+function ruleTimeline(rules) {
+  const rows = rules.slice().sort((p, q) => dayNum(p.application_date) - dayNum(q.application_date)).slice(0, 14);
+  if (!rows.length) return h("p", { class: "empty", text: t("ru.none") });
+  const now = Date.now(), L = 196, R = 14, T = 22, RH = 24, W = 580, H = T + rows.length * RH + 6;
+  const lo = Math.min(...rows.map((r) => dayNum(r.application_date)), now), hi = Math.max(...rows.map((r) => dayNum(r.transition_end || r.application_date)), now) + 365 * 86400000;
+  const y0 = new Date(lo).getUTCFullYear(), y1 = new Date(hi).getUTCFullYear();
+  const x = (ms) => L + ((ms - lo) / (hi - lo)) * (W - L - R);
+  const svg = s("svg", { viewBox: "0 0 " + W + " " + H, class: "gantt", role: "img", "aria-label": t("ru.c.time") });
+  const step = Math.max(1, Math.ceil((y1 - y0) / 8));
+  for (let yr = y0; yr <= y1; yr += step) {
+    const gx = x(Date.UTC(yr, 0, 1));
+    if (gx >= L) svg.append(s("line", { x1: gx.toFixed(1), x2: gx.toFixed(1), y1: T - 4, y2: H - 4, class: "ln-grid" }), s("text", { x: gx.toFixed(1), y: 12, class: "ln-x" }, String(yr)));
+  }
+  rows.forEach((r, i) => {
+    const cy = T + i * RH + RH / 2, a = dayNum(r.application_date), live = a <= now;
+    const name = r.title.length > 30 ? r.title.slice(0, 29) + "…" : r.title;
+    svg.append(s("a", { href: "#/rules?open=" + enc(r.key) }, s("text", { x: L - 8, y: cy + 4, class: "g-lbl" }, name, s("title", {}, r.title + " · " + r.citation))));
+    if (r.transition_end) svg.append(s("rect", { x: x(a).toFixed(1), y: cy - 5, width: Math.max(4, x(dayNum(r.transition_end)) - x(a)).toFixed(1), height: 10, rx: 5, class: "g-tr" }));
+    svg.append(s("circle", { cx: x(a).toFixed(1), cy, r: 6, class: "g-dot " + (live ? "g-live" : "g-soon") }, s("title", {}, r.title + ": " + t("ru.th.start") + " " + r.application_date)));
+  });
+  svg.append(s("line", { x1: x(now).toFixed(1), x2: x(now).toFixed(1), y1: T - 4, y2: H - 4, class: "g-today" }), s("text", { x: x(now).toFixed(1), y: H - 0, class: "ln-x g-todayt" }, t("ru.today")));
+  return h("div", null, svg, h("div", { class: "pair-key" }, h("span", null, h("i", { class: "sw s2" }), t("ru.live")), h("span", null, h("i", { class: "sw s3" }), t("ru.soon")), h("span", null, h("i", { class: "sw sw-tr" }), t("ru.trans"))));
+}
+
+function ruleCoverage(rules) {
+  const kinds = ["bank", "insurer", "reinsurer", "investment_firm", "fund_manager", "corporate", "holding"];
+  const rows = rules.slice(0, 14), L = 196, CW = 46, T = 36, RH = 24, W = L + kinds.length * CW + 8, H = T + rows.length * RH + 4;
+  if (!rows.length) return h("p", { class: "empty", text: t("ru.none") });
+  const svg = s("svg", { viewBox: "0 0 " + W + " " + H, class: "gantt", role: "img", "aria-label": t("ru.c.cov") });
+  kinds.forEach((k, i) => svg.append(s("text", { x: L + i * CW + CW / 2, y: 20, class: "ln-x cov-h" }, word(k).slice(0, 9))));
+  rows.forEach((r, i) => {
+    const cy = T + i * RH + RH / 2;
+    svg.append(s("a", { href: "#/rules?open=" + enc(r.key) }, s("text", { x: L - 8, y: cy + 4, class: "g-lbl" }, r.title.length > 30 ? r.title.slice(0, 29) + "…" : r.title, s("title", {}, r.title))));
+    kinds.forEach((k, j) => svg.append(s("circle", { cx: L + j * CW + CW / 2, cy, r: (r.entity_types || []).includes(k) ? 6 : 2, class: (r.entity_types || []).includes(k) ? "cov-on" : "cov-off" })));
+  });
+  return svg;
+}
+
+PAGES.rules = async (_a, q) => {
+  const [rules, tasks, dash] = await Promise.all([api("/v1/rules"), api("/v1/review-tasks").catch(() => []), api(dashPath()).catch(() => null)]);
+  await entities().catch(() => null);
+  if (dash) setDashMeta(dash);
   const flat = rules.map((v) => ({ key: v.rule_key, status: v.status, ver: v.version_no, ...v.rule }));
-  return h("div", { class: "grid" }, h("div", { class: "span-12" }, pageHead(label("rules", "Rules"), null, h("div", { class: "chips" }, chip(flat.length + " rules", "info"), chip(tasks.length + " awaiting review", tasks.length ? "warn" : "ok")))),
-    card("Rule library", table({ cols: [{ title: "Key", get: (r) => r.key }, { title: "Title", get: (r) => r.title }, { title: "Status", get: (r) => r.status, render: (r) => chip(r.status, r.status === "approved" ? "ok" : r.status === "rejected" ? "bad" : "warn") },
-      { title: "Jurisdictions", get: (r) => (r.jurisdictions || []).join(", ") }, { title: "Effective", get: (r) => r.effective_date }, { title: "Applies from", get: (r) => r.application_date }, { title: "Owner", get: (r) => r.control_owner }],
-    rows: flat, open: (r) => openRule(r.key), csv: "rules", filters: [{ key: "status", label: "Status", get: (r) => r.status }] }), "span-12"),
-    card("Open review tasks", tasks.length ? table({ cols: [{ title: "Task", num: true, get: (r) => r.task_id }, { title: "Rule", get: (r) => r.rule_key }, { title: "Version", num: true, get: (r) => r.version_no }, { title: "Owner", get: (r) => r.owner }, { title: "Opened", get: (r) => dateOf(r.created_at) }],
-      rows: tasks, open: (r) => openRule(r.rule_key), search: false }) : h("p", { class: "empty", text: "Nothing waiting." }), "span-12"));
+  const approved = flat.filter((r) => r.status === "approved"), now = Date.now();
+  const live = approved.filter((r) => dayNum(r.application_date) <= now), soon = approved.filter((r) => dayNum(r.application_date) > now);
+  const limits = approved.flatMap((r) => (r.numeric_requirements || []).map((n) => ({ ...n, rule: r })));
+  const by = dash && dash.sections.rules && !dash.sections.rules.error ? dash.sections.rules.versions_by_status || {} : { approved: approved.length };
+  const count = (list, pick) => { const m = {}; for (const r of list) for (const k of pick(r)) m[k] = (m[k] || 0) + 1; return Object.entries(m).sort((p, q2) => q2[1] - p[1]); };
+
+  const flow = h("ol", { class: "flow" }, [["1", by.draft || 0], ["2", tasks.length], ["3", by.approved || 0], ["4", live.length]].map(([k, n], i) => h("li", { class: "flow-i" },
+    h("span", { class: "flow-n", text: num(n) }), h("div", null, h("strong", { text: t("ru.flow." + k) }), h("p", { text: t("ru.flow." + k + "d") })), i < 3 ? h("span", { class: "arrow", "aria-hidden": "true", text: "→" }) : null)));
+  const intro = h("section", { class: "card ru-intro" }, h("div", { class: "chips" }, chip(t("ru.demo"), "warn")), h("h2", { text: t("ru.intro.h") }), h("p", { class: "hero-sentence", text: t("ru.intro") }), flow,
+    h("p", { class: "muted small", text: t("ru.others", { r: by.rejected || 0, s: by.superseded || 0, w: by.withdrawn || 0 }) }));
+  const kp = h("div", { class: "kpis kpis-ov n5" },
+    kpiCard("k1", ICON.rul, t("ru.k1"), num(approved.length), t("ru.k1.s"), "#/rules"), kpiCard("k2", ICON.ins, t("ru.k2"), num(live.length), t("ru.k2.s"), "#/rules"),
+    kpiCard("k3", ICON.exp, t("ru.k3"), num(soon.length), t("ru.k3.s"), "#/rules"), kpiCard("k4", ICON.alr, t("ru.k4"), num(tasks.length), t("ru.k4.s"), "#/rules"), kpiCard("k5", ICON.str, t("ru.k5"), num(limits.length), t("ru.k5.s"), "#/rules"));
+
+  const g = h("div", { class: "grid ov" });
+  g.append(h("div", { class: "span-12" }, pageHead(label("rules", "Rules"), null, h("div", { class: "chips" }, h("button", { type: "button", class: "btn print-btn", text: t("print"), onclick: () => window.print() })))));
+  g.append(h("div", { class: "span-12" }, intro), h("div", { class: "span-12" }, kp));
+  g.append(card(t("ru.c.status"), donut(Object.entries(by).sort((p, q2) => q2[1] - p[1]), Object.values(by).reduce((p, q2) => p + q2, 0)), "span-4", null, t("ru.c.status.s")));
+  g.append(card(t("ru.c.jur"), bars(count(approved, (r) => r.jurisdictions || []).map(([k, n], i) => ({ name: k === "EU" ? "EU" : cname(k), text: String(n), ratio: n / Math.max(1, approved.length), color: i }))), "span-4", null, t("ru.c.jur.s")));
+  g.append(card(t("ru.c.who"), bars(count(approved, (r) => r.entity_types || []).map(([k, n], i) => ({ name: word(k), text: String(n), ratio: n / Math.max(1, approved.length), color: i }))), "span-4", null, t("ru.c.who.s")));
+  g.append(card(t("ru.c.time"), ruleTimeline(approved), "span-7", null, t("ru.c.time.s")));
+  g.append(card(t("ru.c.cov"), ruleCoverage(approved), "span-5", null, t("ru.c.cov.s")));
+  g.append(card(t("ru.c.thr"), limits.length ? table({ cols: [{ title: t("ru.th.limit"), get: (r) => limitText(r), render: (r) => h("strong", { text: limitText(r) }) }, { title: t("ru.th.rule"), get: (r) => r.rule.title }, { title: t("ru.th.cite"), get: (r) => r.rule.citation },
+    { title: t("ru.th.start"), get: (r) => r.rule.application_date }], rows: limits, open: (r) => openRule(r.rule.key), csv: "rule-limits", pageSize: 8 }) : h("p", { class: "empty", text: t("ru.none") }), "span-12", null, t("ru.c.thr.s")));
+
+  // finder: which approved rules apply to a chosen institution today
+  const out = h("div", { class: "find-out" }), sel = h("select", { "aria-label": t("ru.find.pick"), onchange: async (e) => {
+    const lei = e.target.value; out.replaceChildren();
+    if (!lei) return;
+    const en = S.ents.get(lei);
+    try {
+      const found = await api("/v1/rules/applicable?jurisdiction=" + enc(en.jurisdiction) + "&entity_type=" + enc(en.entity_type) + "&basis=" + enc(en.reporting_basis) + (S.asof ? "&on=" + S.asof : ""));
+      out.append(h("p", { class: "muted", text: found.length ? t("ru.find.n", { n: found.length, name: en.legal_name }) : t("ru.find.none") }),
+        h("ul", { class: "refs" }, found.map((f) => h("li", null, h("button", { type: "button", class: "linklike", text: f.version.rule.title, onclick: () => openRule(f.version.rule_key) }), f.in_transition ? chip(t("ru.trans"), "info") : null, h("span", { class: "muted small", text: f.version.rule.citation })))));
+    } catch (er) { out.append(errMsg(er)); }
+  } }, h("option", { value: "", text: t("ru.find.pick") }), [...S.ents.entries()].sort((p, q2) => p[1].legal_name.localeCompare(q2[1].legal_name)).map(([lei, e]) => h("option", { value: lei, text: e.legal_name + " (" + e.jurisdiction + ")" })));
+  g.append(card(t("ru.c.find"), h("div", null, sel, out), "span-6", null, t("ru.c.find.s")));
+  const first = [...S.ents.entries()].find(([, e]) => e.entity_type === "bank" && e.jurisdiction === "DE") || [...S.ents.entries()][0];
+  if (first) { sel.value = first[0]; sel.dispatchEvent(new Event("change")); }          // show an example straight away
+  g.append(card(t("ru.c.ref"), approved.length ? h("ul", { class: "refs" }, approved.map((r) => h("li", null, h("strong", { text: r.citation }), h("span", { class: "muted small", text: r.title }),
+    r.source_url && /^https:\/\//.test(r.source_url) ? h("a", { href: r.source_url, rel: "noopener noreferrer", target: "_blank", text: t("ru.open") }) : null))) : h("p", { class: "empty", text: t("ru.none") }), "span-6 refs-card", null, t("ru.c.ref.s")));
+  g.append(card(t("ru.c.lib"), table({ cols: [{ title: t("ru.th.key"), get: (r) => r.key }, { title: t("ru.th.rule"), get: (r) => r.title }, { title: t("th.status"), get: (r) => r.status, render: (r) => chip(word(r.status), r.status === "approved" ? "ok" : r.status === "rejected" ? "bad" : "warn") },
+    { title: t("ru.th.juris"), get: (r) => (r.jurisdictions || []).join(", ") }, { title: t("ru.th.start"), get: (r) => r.application_date }, { title: t("ru.th.owner"), get: (r) => r.control_owner }],
+  rows: flat, open: (r) => openRule(r.key), csv: "rules", filters: [{ key: "status", label: t("th.status"), get: (r) => r.status }], pageSize: 10 }), "span-12", null, t("ru.c.lib.s")));
+  g.append(card(t("ru.c.tasks"), tasks.length ? table({ cols: [{ title: "#", num: true, get: (r) => r.task_id }, { title: t("ru.th.rule"), get: (r) => r.rule_key }, { title: "v", num: true, get: (r) => r.version_no }, { title: t("ru.th.owner"), get: (r) => r.owner }, { title: t("ru.th.opened"), get: (r) => dateOf(r.created_at) }],
+    rows: tasks, open: (r) => openRule(r.rule_key), search: false }) : h("p", { class: "empty", text: t("ru.none") }), "span-12", null, t("ru.c.tasks.s")));
+  if (q && q.get("open") && S.ruleOpen !== location.hash) { S.ruleOpen = location.hash; setTimeout(() => openRule(q.get("open")), 0); }   // once, not on every live refresh
+  return g;
 };
 
 PAGES.data = async () => {

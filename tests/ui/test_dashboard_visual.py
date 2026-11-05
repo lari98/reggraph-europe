@@ -348,6 +348,48 @@ def test_country_page_print_view_and_data_page(browser: Any, server: dict[str, s
     page.context.close()
 
 
+def test_rules_page_explains_itself_and_shows_the_pictures(
+    browser: Any, server: dict[str, str]
+) -> None:
+    """0.9.0: plain-language Rules page with flow, numbers, timeline, finder and sources."""
+    page = open_page(browser, server["admin"], size=(1440, 900))
+    page.wait_for_selector(".kpi")
+    settle(page)
+    go(page, "rules")
+    page.wait_for_selector(".flow")
+    settle(page)
+    text = page.locator("#main").inner_text()
+    assert "four-eyes principle" in text and "Illustrative demo summaries" in text
+    assert page.locator(".flow .flow-i").count() == 4
+    assert page.locator(".kpis-ov .kpi").count() == 5
+    assert page.locator("svg.gantt").count() == 2  # timeline and coverage grid
+    assert page.locator("svg.gantt .g-today").count() == 1
+    # the finder shows an example straight away and reacts to a new choice
+    page.wait_for_selector(".find-out .refs li")
+    first = page.locator(".find-out .refs li").count()
+    assert first >= 1
+    page.locator(".find-out").locator("xpath=preceding-sibling::select").select_option(index=2)
+    page.wait_for_selector(".find-out p")
+    # a rule opens in the drawer from the timeline link
+    page.locator("svg.gantt a").first.click()
+    _wait(page, "document.querySelector('.drawer') !== null", "rule drawer")
+    assert page.problems == []
+    page.context.close()
+
+
+def test_rules_page_is_translated_and_phone_safe(browser: Any, server: dict[str, str]) -> None:
+    page = open_page(browser, server["admin"], size=(390, 844), locale="de-DE")
+    page.wait_for_selector(".kpi")
+    settle(page)
+    go(page, "rules")
+    page.wait_for_selector(".flow")
+    settle(page)
+    assert "Vier-Augen-Prinzip" in page.inner_text("#main")
+    assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
+    assert page.problems == []
+    page.context.close()
+
+
 def _admin_token(server: dict[str, str]) -> str:
     return server["admin"].split("#token=", 1)[1]
 

@@ -9,6 +9,8 @@ module also has its own version in `module_versions.json`. Format follows
 Newest first. Written automatically by `python tools/module_manifest.py bump ...`.
 
 <!-- module-log -->
+- **app-shell 0.9.0** (2026-11-04, minor): Release 0.9.0: 22 illustrative rules with real source references in the demo
+- **dashboard 0.8.0** (2026-11-04, minor): Rules page for non-experts: how rules work, status/country/type charts, start-date timeline, coverage grid, plain-language limits, institution finder, official sources
 - **app-shell 0.8.0** (2026-11-04, minor): Release 0.8.0: large realistic demo data set (DACH-weighted, invented), seeded and repeatable
 - **dashboard 0.7.0** (2026-11-04, minor): Country detail pages, loss trend chart, print/PDF view, richer Data & audit page, network limited to biggest institutions, units note
 - **dashboard 0.6.1** (2026-11-04, patch): Overview: five more cards (lender country, borrower type, lenders, exposure-to-loss, key ratios)
@@ -62,6 +64,12 @@ Newest first. Written automatically by `python tools/module_manifest.py bump ...
 - **storage 0.2.0** (2026-11-03, minor): Migration 2: entity_versions and ownership_links with immutability triggers
 - **security 0.2.0** (2026-11-03, minor): Add registry:read and registry:write permissions to the role matrix
 - **registry 0.1.0** (2026-11-03, new): Phase 2: LEI-keyed entities, licences, ownership links, groups, entity-to-rule mapping
+
+## [0.9.0] - Rules page for non-experts, realistic rules with references
+
+- **Rules page** rewritten for people who have never seen a rule library: what rules are and the four-eyes approval flow (proposed, in review, approved, in force) with live counts; five key numbers; charts by status, country and type of institution; a timeline of start dates and transition periods; a "which rule applies to whom" grid; every numeric limit in plain words ("CET1 ratio at least 4.5 percent"); a finder that lists the rules applying to a chosen institution; an official-sources panel with links; the full library and the review queue. Fully translated into English, German, French, Italian and Spanish; print/PDF button.
+- **Demo rules**: 22 illustrative rules with real source references (CRR, LCR delegated act, Solvency II, DORA, CRR3, AMLR, SFDR, Swiss ERV and LiqV, German KWG) and links to EUR-Lex and Fedlex. The wording and dates are short invented summaries, marked "(demo summary)"; every status occurs (approved, draft, rejected, superseded by a new version, withdrawn), so the review flow can be shown. Not legal advice.
+- A rule opened from a timeline link opens once, not on every live refresh.
 
 ## [0.8.0] - Realistic demo data, country pages, trend and print view
 
